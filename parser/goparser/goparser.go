@@ -208,7 +208,9 @@ const NodeTypeImportDecl = "import_decl"
 const NodeTypeImportSpec = "import_spec"
 const NodeTypeValueSpec = "value_spec"
 const NodeTypeTypeSpec = "type_spec"
-const NodeTypeGenDecl = "gen_decl"
+const NodeTypeConstDecl = "const_decl"
+const NodeTypeVarDecl = "var_decl"
+const NodeTypeTypeDecl = "type_decl"
 const NodeTypeFuncDecl = "func_decl"
 const NodeTypeEllipsis = "ellipsis"
 const NodeTypeLabeledStmt = "labeled_stmt"
@@ -216,6 +218,15 @@ const NodeTypeGenericTypeInstantiation = "generic_type_instantiation"
 const NodeTypeIdent = "ident"
 const NodeTypeMakeExpr = "make_expr"
 const NodeTypeNewExpr = "new_expr"
+const NodeTypePackageIdent = "package_ident"
+const NodeTypeImportDot = "import_dot"
+const NodeTypeImportIdent = "import_ident"
+const NodeTypeImportPath = "import_path"
+const NodeTypeConstIdent = "const_ident"
+const NodeTypeVarIdent = "var_ident"
+const NodeTypeTypeIdent = "type_ident"
+const NodeTypeFuncIdent = "func_ident"
+const NodeTypeMethodIdent = "method_ident"
 
 func errorContext(filePath string, fileContent []rune, offset, lineIdx, charIdx int) string {
 	var lineStartOffset int
@@ -6402,78 +6413,52 @@ func (n *TypeSpecNode) Dump(hook func(Node, map[string]string) string) map[strin
 	return ret
 }
 
-func NewGenDeclNode(filePath string, fileContent []rune, type_ Node, specs Node, start, end Position) Node {
-	if type_ == nil {
-		type_ = DummyNode
-	}
+func NewConstDeclNode(filePath string, fileContent []rune, specs Node, start, end Position) Node {
 	if specs == nil {
 		specs = DummyNode
 	}
-	_1 := &GenDeclNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeGenDecl, start, end),
-		type_:    type_,
+	_1 := &ConstDeclNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeConstDecl, start, end),
 		specs:    specs,
 	}
 	creationHook(_1)
 	return _1
 }
 
-type GenDeclNode struct {
+type ConstDeclNode struct {
 	*BaseNode
-	type_ Node
 	specs Node
 }
 
-func (n *GenDeclNode) Type() Node {
-	return n.type_
-}
-
-func (n *GenDeclNode) SetType(v Node) {
-	n.type_ = v
-}
-
-func (n *GenDeclNode) Specs() Node {
+func (n *ConstDeclNode) Specs() Node {
 	return n.specs
 }
 
-func (n *GenDeclNode) SetSpecs(v Node) {
+func (n *ConstDeclNode) SetSpecs(v Node) {
 	n.specs = v
 }
 
-func (n *GenDeclNode) BuildLink() {
-	if !n.Type().IsDummy() {
-		type_ := n.Type()
-		type_.BuildLink()
-		type_.SetParent(n)
-		type_.SetSelfField("type_")
-		type_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*GenDeclNode).SetType(n)
-		})
-	}
+func (n *ConstDeclNode) BuildLink() {
 	if !n.Specs().IsDummy() {
 		specs := n.Specs()
 		specs.BuildLink()
 		specs.SetParent(n)
 		specs.SetSelfField("specs")
 		specs.SetReplaceSelf(func(n Node) {
-			n.Parent().(*GenDeclNode).SetSpecs(n)
+			n.Parent().(*ConstDeclNode).SetSpecs(n)
 		})
 	}
 }
 
-func (n *GenDeclNode) Fields() []string {
+func (n *ConstDeclNode) Fields() []string {
 	return []string{
-		"type_",
 		"specs",
 	}
 }
 
-func (n *GenDeclNode) Child(field string) Node {
+func (n *ConstDeclNode) Child(field string) Node {
 	if field == "" {
 		return nil
-	}
-	if field == "type_" {
-		return n.Type()
 	}
 	if field == "specs" {
 		return n.Specs()
@@ -6481,35 +6466,29 @@ func (n *GenDeclNode) Child(field string) Node {
 	return nil
 }
 
-func (n *GenDeclNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
+func (n *ConstDeclNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
 		return
 	}
-	n.SetType(nodes[0])
-	n.SetSpecs(nodes[1])
+	n.SetSpecs(nodes[0])
 }
 
-func (n *GenDeclNode) Fork() Node {
-	_ret := &GenDeclNode{
+func (n *ConstDeclNode) Fork() Node {
+	_ret := &ConstDeclNode{
 		BaseNode: n.BaseNode.fork(),
-		type_:    n.type_.Fork(),
 		specs:    n.specs.Fork(),
 	}
-	_ret.type_.SetParent(_ret)
 	_ret.specs.SetParent(_ret)
 	return _ret
 }
 
-func (n *GenDeclNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+func (n *ConstDeclNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
 	vc, e := beforeChildren(n)
 	if e {
 		return true
 	}
 	if !vc {
 		return false
-	}
-	if n.type_.Visit(beforeChildren, afterChildren) {
-		return true
 	}
 	if n.specs.Visit(beforeChildren, afterChildren) {
 		return true
@@ -6520,10 +6499,195 @@ func (n *GenDeclNode) Visit(beforeChildren func(node Node) (visitChildren, exit 
 	return false
 }
 
-func (n *GenDeclNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+func (n *ConstDeclNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
-	ret["kind"] = "\"gen_decl\""
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["kind"] = "\"const_decl\""
+	ret["specs"] = DumpNode(n.Specs(), hook)
+	return ret
+}
+
+func NewVarDeclNode(filePath string, fileContent []rune, specs Node, start, end Position) Node {
+	if specs == nil {
+		specs = DummyNode
+	}
+	_1 := &VarDeclNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeVarDecl, start, end),
+		specs:    specs,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type VarDeclNode struct {
+	*BaseNode
+	specs Node
+}
+
+func (n *VarDeclNode) Specs() Node {
+	return n.specs
+}
+
+func (n *VarDeclNode) SetSpecs(v Node) {
+	n.specs = v
+}
+
+func (n *VarDeclNode) BuildLink() {
+	if !n.Specs().IsDummy() {
+		specs := n.Specs()
+		specs.BuildLink()
+		specs.SetParent(n)
+		specs.SetSelfField("specs")
+		specs.SetReplaceSelf(func(n Node) {
+			n.Parent().(*VarDeclNode).SetSpecs(n)
+		})
+	}
+}
+
+func (n *VarDeclNode) Fields() []string {
+	return []string{
+		"specs",
+	}
+}
+
+func (n *VarDeclNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "specs" {
+		return n.Specs()
+	}
+	return nil
+}
+
+func (n *VarDeclNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetSpecs(nodes[0])
+}
+
+func (n *VarDeclNode) Fork() Node {
+	_ret := &VarDeclNode{
+		BaseNode: n.BaseNode.fork(),
+		specs:    n.specs.Fork(),
+	}
+	_ret.specs.SetParent(_ret)
+	return _ret
+}
+
+func (n *VarDeclNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.specs.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *VarDeclNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"var_decl\""
+	ret["specs"] = DumpNode(n.Specs(), hook)
+	return ret
+}
+
+func NewTypeDeclNode(filePath string, fileContent []rune, specs Node, start, end Position) Node {
+	if specs == nil {
+		specs = DummyNode
+	}
+	_1 := &TypeDeclNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeDecl, start, end),
+		specs:    specs,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type TypeDeclNode struct {
+	*BaseNode
+	specs Node
+}
+
+func (n *TypeDeclNode) Specs() Node {
+	return n.specs
+}
+
+func (n *TypeDeclNode) SetSpecs(v Node) {
+	n.specs = v
+}
+
+func (n *TypeDeclNode) BuildLink() {
+	if !n.Specs().IsDummy() {
+		specs := n.Specs()
+		specs.BuildLink()
+		specs.SetParent(n)
+		specs.SetSelfField("specs")
+		specs.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeDeclNode).SetSpecs(n)
+		})
+	}
+}
+
+func (n *TypeDeclNode) Fields() []string {
+	return []string{
+		"specs",
+	}
+}
+
+func (n *TypeDeclNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "specs" {
+		return n.Specs()
+	}
+	return nil
+}
+
+func (n *TypeDeclNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetSpecs(nodes[0])
+}
+
+func (n *TypeDeclNode) Fork() Node {
+	_ret := &TypeDeclNode{
+		BaseNode: n.BaseNode.fork(),
+		specs:    n.specs.Fork(),
+	}
+	_ret.specs.SetParent(_ret)
+	return _ret
+}
+
+func (n *TypeDeclNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.specs.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *TypeDeclNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"type_decl\""
 	ret["specs"] = DumpNode(n.Specs(), hook)
 	return ret
 }
@@ -7373,6 +7537,843 @@ func (n *NewExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit 
 func (n *NewExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"new_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewPackageIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &PackageIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypePackageIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type PackageIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *PackageIdentNode) X() Node {
+	return n.x
+}
+
+func (n *PackageIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *PackageIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*PackageIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *PackageIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *PackageIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *PackageIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *PackageIdentNode) Fork() Node {
+	_ret := &PackageIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *PackageIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *PackageIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"package_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewImportDotNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ImportDotNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportDot, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ImportDotNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ImportDotNode) X() Node {
+	return n.x
+}
+
+func (n *ImportDotNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ImportDotNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportDotNode).SetX(n)
+		})
+	}
+}
+
+func (n *ImportDotNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ImportDotNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ImportDotNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ImportDotNode) Fork() Node {
+	_ret := &ImportDotNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ImportDotNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ImportDotNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"import_dot\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewImportIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ImportIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ImportIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ImportIdentNode) X() Node {
+	return n.x
+}
+
+func (n *ImportIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ImportIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *ImportIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ImportIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ImportIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ImportIdentNode) Fork() Node {
+	_ret := &ImportIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ImportIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ImportIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"import_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewImportPathNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ImportPathNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportPath, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ImportPathNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ImportPathNode) X() Node {
+	return n.x
+}
+
+func (n *ImportPathNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ImportPathNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportPathNode).SetX(n)
+		})
+	}
+}
+
+func (n *ImportPathNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ImportPathNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ImportPathNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ImportPathNode) Fork() Node {
+	_ret := &ImportPathNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ImportPathNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ImportPathNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"import_path\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewConstIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ConstIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeConstIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ConstIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ConstIdentNode) X() Node {
+	return n.x
+}
+
+func (n *ConstIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ConstIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ConstIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *ConstIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ConstIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ConstIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ConstIdentNode) Fork() Node {
+	_ret := &ConstIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ConstIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ConstIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"const_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewVarIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &VarIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeVarIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type VarIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *VarIdentNode) X() Node {
+	return n.x
+}
+
+func (n *VarIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *VarIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*VarIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *VarIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *VarIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *VarIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *VarIdentNode) Fork() Node {
+	_ret := &VarIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *VarIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *VarIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"var_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewTypeIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &TypeIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type TypeIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *TypeIdentNode) X() Node {
+	return n.x
+}
+
+func (n *TypeIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *TypeIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *TypeIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *TypeIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *TypeIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *TypeIdentNode) Fork() Node {
+	_ret := &TypeIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *TypeIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *TypeIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"type_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewFuncIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &FuncIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeFuncIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type FuncIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *FuncIdentNode) X() Node {
+	return n.x
+}
+
+func (n *FuncIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *FuncIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*FuncIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *FuncIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *FuncIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *FuncIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *FuncIdentNode) Fork() Node {
+	_ret := &FuncIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *FuncIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *FuncIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"func_ident\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewMethodIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &MethodIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeMethodIdent, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type MethodIdentNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *MethodIdentNode) X() Node {
+	return n.x
+}
+
+func (n *MethodIdentNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *MethodIdentNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*MethodIdentNode).SetX(n)
+		})
+	}
+}
+
+func (n *MethodIdentNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *MethodIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *MethodIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *MethodIdentNode) Fork() Node {
+	_ret := &MethodIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *MethodIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *MethodIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"method_ident\""
 	ret["x"] = DumpNode(n.X(), hook)
 	return ret
 }
@@ -8527,22 +9528,69 @@ func (ps *Parser) Parse() (ret Node, err error) {
 
 /*
 file:
-| 'package' n=IDENT ';' i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+| n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
 */
 func (ps *Parser) file() Node {
-	/* 'package' n=IDENT ';' i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+	/* n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
 	 */
 	pos := ps._mark()
 	for {
 		var i Node
 		var n Node
 		var t Node
+		n = ps.packageDecl()
+		if n == nil {
+			break
+		}
+		_1 := make([]Node, 0)
+		var _2 Node
+		for {
+			_2 = ps.importDecl()
+			if _2 == nil {
+				break
+			}
+			_1 = append(_1, _2)
+		}
+		i = NewNodesNode(_1)
+		_ = i
+		_3 := make([]Node, 0)
+		var _4 Node
+		for {
+			_4 = ps.topLevelDeclSemi()
+			if _4 == nil {
+				break
+			}
+			_3 = append(_3, _4)
+		}
+		t = NewNodesNode(_3)
+		_ = t
+		var _5 Node
+		_5 = ps._expectK(TokenTypeEndOfFile)
+		if _5 == nil {
+			break
+		}
+		return NewFileNode(ps._filePath, ps._fileContent, n, i, t, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+package_decl:
+| 'package' n=package_ident ';' {n}
+*/
+func (ps *Parser) packageDecl() Node {
+	/* 'package' n=package_ident ';' {n}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
 		var _1 Node
 		_1 = ps._expectK(TokenTypeKwPackage)
 		if _1 == nil {
 			break
 		}
-		n = ps._expectK(TokenTypeIdent)
+		n = ps.packageIdent()
 		if n == nil {
 			break
 		}
@@ -8551,34 +9599,27 @@ func (ps *Parser) file() Node {
 		if _2 == nil {
 			break
 		}
-		_3 := make([]Node, 0)
-		var _4 Node
-		for {
-			_4 = ps.importDecl()
-			if _4 == nil {
-				break
-			}
-			_3 = append(_3, _4)
-		}
-		i = NewNodesNode(_3)
-		_ = i
-		_5 := make([]Node, 0)
-		var _6 Node
-		for {
-			_6 = ps.topLevelDeclSemi()
-			if _6 == nil {
-				break
-			}
-			_5 = append(_5, _6)
-		}
-		t = NewNodesNode(_5)
-		_ = t
-		var _7 Node
-		_7 = ps._expectK(TokenTypeEndOfFile)
-		if _7 == nil {
+		return n
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+package_ident:
+| n=IDENT {package_ident(n)}
+*/
+func (ps *Parser) packageIdent() Node {
+	/* n=IDENT {package_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
 			break
 		}
-		return NewFileNode(ps._filePath, ps._fileContent, n, i, t, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+		return NewPackageIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -8652,11 +9693,11 @@ func (ps *Parser) importDecl() Node {
 
 /*
 import_spec:
-| name=(IDENT | '.')? path=STRING {import_spec(name, path)}
-_group_2 <-- (IDENT | '.')
+| name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
+_group_2 <-- (import_dot | import_ident)
 */
 func (ps *Parser) importSpec() Node {
-	/* name=(IDENT | '.')? path=STRING {import_spec(name, path)}
+	/* name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
 	 */
 	pos := ps._mark()
 	for {
@@ -8664,11 +9705,71 @@ func (ps *Parser) importSpec() Node {
 		var path Node
 		name = ps._group2()
 		_ = name
-		path = ps._expectK(TokenTypeString)
+		path = ps.importPath()
 		if path == nil {
 			break
 		}
 		return NewImportSpecNode(ps._filePath, ps._fileContent, name, path, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+import_dot:
+| d='.' {import_dot(d)}
+*/
+func (ps *Parser) importDot() Node {
+	/* d='.' {import_dot(d)}
+	 */
+	pos := ps._mark()
+	for {
+		var d Node
+		d = ps._expectK(TokenTypeOpDot)
+		if d == nil {
+			break
+		}
+		return NewImportDotNode(ps._filePath, ps._fileContent, d, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+import_name:
+| n=IDENT {import_ident(n)}
+*/
+func (ps *Parser) importName() Node {
+	/* n=IDENT {import_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewImportIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+import_path:
+| s=STRING {import_path(s)}
+*/
+func (ps *Parser) importPath() Node {
+	/* s=STRING {import_path(s)}
+	 */
+	pos := ps._mark()
+	for {
+		var s Node
+		s = ps._expectK(TokenTypeString)
+		if s == nil {
+			break
+		}
+		return NewImportPathNode(ps._filePath, ps._fileContent, s, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -8692,6 +9793,698 @@ func (ps *Parser) topLevelDeclSemi() Node {
 		_1 = ps._expectK(TokenTypeOpSemi)
 		_ = _1
 		return t
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+top_level_decl:
+| function_decl
+| method_decl
+| const_decl
+| var_decl
+| type_decl
+*/
+func (ps *Parser) topLevelDecl() Node {
+	/* function_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.functionDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* method_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.methodDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* const_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.constDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* var_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.varDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* type_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.typeDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	return nil
+}
+
+/*
+function_decl:
+| 'func' n=func_ident t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
+*/
+func (ps *Parser) functionDecl() Node {
+	/* 'func' n=func_ident t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
+	 */
+	pos := ps._mark()
+	for {
+		var b Node
+		var n Node
+		var s Node
+		var t Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwFunc)
+		if _1 == nil {
+			break
+		}
+		n = ps.funcIdent()
+		if n == nil {
+			break
+		}
+		t = ps.genericTypeParameters()
+		_ = t
+		s = ps.signature()
+		_ = s
+		b = ps.block()
+		_ = b
+		return NewFuncDeclNode(ps._filePath, ps._fileContent, nil, n, t, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+func_ident:
+| n=IDENT {func_ident(n)}
+*/
+func (ps *Parser) funcIdent() Node {
+	/* n=IDENT {func_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewFuncIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+method_decl:
+| 'func' r=receiver n=method_ident s=signature b=block? {func_decl(r,n,_,s,b)}
+*/
+func (ps *Parser) methodDecl() Node {
+	/* 'func' r=receiver n=method_ident s=signature b=block? {func_decl(r,n,_,s,b)}
+	 */
+	pos := ps._mark()
+	for {
+		var b Node
+		var n Node
+		var r Node
+		var s Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwFunc)
+		if _1 == nil {
+			break
+		}
+		r = ps.receiver()
+		if r == nil {
+			break
+		}
+		n = ps.methodIdent()
+		if n == nil {
+			break
+		}
+		s = ps.signature()
+		if s == nil {
+			break
+		}
+		b = ps.block()
+		_ = b
+		return NewFuncDeclNode(ps._filePath, ps._fileContent, r, n, nil, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+method_ident:
+| n=IDENT {method_ident(n)}
+*/
+func (ps *Parser) methodIdent() Node {
+	/* n=IDENT {method_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewMethodIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+const_decl:
+| 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
+| 'const' c=const_spec {const_decl([c])}
+*/
+func (ps *Parser) constDecl() Node {
+	/* 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
+	 */
+	pos := ps._mark()
+	for {
+		var c Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwConst)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftParen)
+		if _2 == nil {
+			break
+		}
+		_3 := make([]Node, 0)
+		var _4 Node
+		for {
+			_4 = ps.constSpecSemi()
+			if _4 == nil {
+				break
+			}
+			_3 = append(_3, _4)
+		}
+		c = NewNodesNode(_3)
+		_ = c
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpRightParen)
+		if _5 == nil {
+			break
+		}
+		return NewConstDeclNode(ps._filePath, ps._fileContent, c, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* 'const' c=const_spec {const_decl([c])}
+	 */
+	for {
+		var c Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwConst)
+		if _1 == nil {
+			break
+		}
+		c = ps.constSpec()
+		if c == nil {
+			break
+		}
+		return NewConstDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{c}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+const_spec_semi:
+| c=const_spec end_semi {c}
+*/
+func (ps *Parser) constSpecSemi() Node {
+	/* c=const_spec end_semi {c}
+	 */
+	pos := ps._mark()
+	for {
+		var c Node
+		c = ps.constSpec()
+		if c == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return c
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+const_spec:
+| i=','.const_ident+ (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
+*/
+func (ps *Parser) constSpec() Node {
+	/* i=','.const_ident+ (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
+	 */
+	pos := ps._mark()
+	for {
+		var e Node
+		var i Node
+		var t Node
+		_1 := make([]Node, 0)
+		var _2, _3 Node
+		_2 = ps.constIdent()
+		if _2 == nil {
+			break
+		}
+		_1 = append(_1, _2)
+		for {
+			_p := ps._mark()
+			_3 = ps._expectK(TokenTypeOpComma)
+			if _3 == nil {
+				break
+			}
+			_2 = ps.constIdent()
+			if _2 == nil {
+				ps._reset(_p)
+				break
+			}
+			_1 = append(_1, _2)
+		}
+		i = NewNodesNode(_1)
+		_ = i
+		var _4 Node
+		for {
+			_ok := false
+			_p1 := ps._mark()
+			for {
+				t = ps.type_()
+				_ = t
+				var _5 Node
+				_5 = ps._expectK(TokenTypeOpEqual)
+				if _5 == nil {
+					break
+				}
+				e = ps.expressionList()
+				if e == nil {
+					break
+				}
+				_4 = e
+				_ok = true
+				break
+			}
+			if !_ok {
+				ps._reset(_p1)
+				t = nil
+			}
+			break
+		}
+		_ = _4
+		return NewValueSpecNode(ps._filePath, ps._fileContent, i, t, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+const_ident:
+| n=IDENT {const_ident(n)}
+*/
+func (ps *Parser) constIdent() Node {
+	/* n=IDENT {const_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewConstIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+var_decl:
+| 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
+| 'var' x=var_spec {var_decl([x])}
+*/
+func (ps *Parser) varDecl() Node {
+	/* 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwVar)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftParen)
+		if _2 == nil {
+			break
+		}
+		_3 := make([]Node, 0)
+		var _4 Node
+		for {
+			_4 = ps.varSpecSemi()
+			if _4 == nil {
+				break
+			}
+			_3 = append(_3, _4)
+		}
+		x = NewNodesNode(_3)
+		_ = x
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpRightParen)
+		if _5 == nil {
+			break
+		}
+		return NewVarDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* 'var' x=var_spec {var_decl([x])}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwVar)
+		if _1 == nil {
+			break
+		}
+		x = ps.varSpec()
+		if x == nil {
+			break
+		}
+		return NewVarDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+var_spec_semi:
+| x=var_spec end_semi {x}
+*/
+func (ps *Parser) varSpecSemi() Node {
+	/* x=var_spec end_semi {x}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps.varSpec()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return x
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+var_spec:
+| i=','.var_ident+ t=type ('=' e=expression_list)? {value_spec(i, t, e)}
+| i=','.var_ident+ '=' e=expression_list {value_spec(i, _, e)}
+*/
+func (ps *Parser) varSpec() Node {
+	/* i=','.var_ident+ t=type ('=' e=expression_list)? {value_spec(i, t, e)}
+	 */
+	pos := ps._mark()
+	for {
+		var e Node
+		var i Node
+		var t Node
+		_1 := make([]Node, 0)
+		var _2, _3 Node
+		_2 = ps.varIdent()
+		if _2 == nil {
+			break
+		}
+		_1 = append(_1, _2)
+		for {
+			_p := ps._mark()
+			_3 = ps._expectK(TokenTypeOpComma)
+			if _3 == nil {
+				break
+			}
+			_2 = ps.varIdent()
+			if _2 == nil {
+				ps._reset(_p)
+				break
+			}
+			_1 = append(_1, _2)
+		}
+		i = NewNodesNode(_1)
+		_ = i
+		t = ps.type_()
+		if t == nil {
+			break
+		}
+		var _4 Node
+		for {
+			_ok := false
+			_p1 := ps._mark()
+			for {
+				var _5 Node
+				_5 = ps._expectK(TokenTypeOpEqual)
+				if _5 == nil {
+					break
+				}
+				e = ps.expressionList()
+				if e == nil {
+					break
+				}
+				_4 = e
+				_ok = true
+				break
+			}
+			if !_ok {
+				ps._reset(_p1)
+			}
+			break
+		}
+		_ = _4
+		return NewValueSpecNode(ps._filePath, ps._fileContent, i, t, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* i=','.var_ident+ '=' e=expression_list {value_spec(i, _, e)}
+	 */
+	for {
+		var e Node
+		var i Node
+		_1 := make([]Node, 0)
+		var _2, _3 Node
+		_2 = ps.varIdent()
+		if _2 == nil {
+			break
+		}
+		_1 = append(_1, _2)
+		for {
+			_p := ps._mark()
+			_3 = ps._expectK(TokenTypeOpComma)
+			if _3 == nil {
+				break
+			}
+			_2 = ps.varIdent()
+			if _2 == nil {
+				ps._reset(_p)
+				break
+			}
+			_1 = append(_1, _2)
+		}
+		i = NewNodesNode(_1)
+		_ = i
+		var _4 Node
+		_4 = ps._expectK(TokenTypeOpEqual)
+		if _4 == nil {
+			break
+		}
+		e = ps.expressionList()
+		if e == nil {
+			break
+		}
+		return NewValueSpecNode(ps._filePath, ps._fileContent, i, nil, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+var_ident:
+| n=IDENT {var_ident(n)}
+*/
+func (ps *Parser) varIdent() Node {
+	/* n=IDENT {var_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewVarIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+type_decl:
+| 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
+| 'type' x=type_spec {type_decl([x])}
+*/
+func (ps *Parser) typeDecl() Node {
+	/* 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwType)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftParen)
+		if _2 == nil {
+			break
+		}
+		_3 := make([]Node, 0)
+		var _4 Node
+		for {
+			_4 = ps.typeSpecSemi()
+			if _4 == nil {
+				break
+			}
+			_3 = append(_3, _4)
+		}
+		x = NewNodesNode(_3)
+		_ = x
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpRightParen)
+		if _5 == nil {
+			break
+		}
+		return NewTypeDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* 'type' x=type_spec {type_decl([x])}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwType)
+		if _1 == nil {
+			break
+		}
+		x = ps.typeSpec()
+		if x == nil {
+			break
+		}
+		return NewTypeDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+type_spec_semi:
+| x=type_spec end_semi {x}
+*/
+func (ps *Parser) typeSpecSemi() Node {
+	/* x=type_spec end_semi {x}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps.typeSpec()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return x
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+type_spec:
+| x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
+*/
+func (ps *Parser) typeSpec() Node {
+	/* x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
+	 */
+	pos := ps._mark()
+	for {
+		var eq Node
+		var t Node
+		var x Node
+		var y Node
+		x = ps._expectK(TokenTypeIdent)
+		if x == nil {
+			break
+		}
+		t = ps.genericTypeParameters()
+		_ = t
+		eq = ps._expectK(TokenTypeOpEqual)
+		_ = eq
+		y = ps.type_()
+		if y == nil {
+			break
+		}
+		return NewTypeSpecNode(ps._filePath, ps._fileContent, x, t, eq, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+type_ident:
+| n=IDENT {type_ident(n)}
+*/
+func (ps *Parser) typeIdent() Node {
+	/* n=IDENT {type_ident(n)}
+	 */
+	pos := ps._mark()
+	for {
+		var n Node
+		n = ps._expectK(TokenTypeIdent)
+		if n == nil {
+			break
+		}
+		return NewTypeIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -10977,281 +12770,6 @@ func (ps *Parser) qualifiedIdent() Node {
 }
 
 /*
-top_level_decl:
-| declaration
-| _hack_function_decl
-| _hack_method_decl
-*/
-func (ps *Parser) topLevelDecl() Node {
-	/* declaration
-	 */
-	for {
-		var _1 Node
-		_1 = ps.declaration()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* _hack_function_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps._hackFunctionDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* _hack_method_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps._hackMethodDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
-declaration:
-| t='const' '(' c=const_spec_semi* ')' {gen_decl(t, c)}
-| t='const' c=const_spec {gen_decl(t, [c])}
-| t='var' '(' x=var_spec_semi* ')' {gen_decl(t, x)}
-| t='var' x=var_spec {gen_decl(t, [x])}
-| t='type' '(' x=type_spec_semi* ')' {gen_decl(t, x)}
-| t='type' x=type_spec {gen_decl(t, [x])}
-*/
-func (ps *Parser) declaration() Node {
-	/* t='const' '(' c=const_spec_semi* ')' {gen_decl(t, c)}
-	 */
-	pos := ps._mark()
-	for {
-		var c Node
-		var t Node
-		t = ps._expectK(TokenTypeKwConst)
-		if t == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftParen)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3 Node
-		for {
-			_3 = ps.constSpecSemi()
-			if _3 == nil {
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		c = NewNodesNode(_2)
-		_ = c
-		var _4 Node
-		_4 = ps._expectK(TokenTypeOpRightParen)
-		if _4 == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, c, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t='const' c=const_spec {gen_decl(t, [c])}
-	 */
-	for {
-		var c Node
-		var t Node
-		t = ps._expectK(TokenTypeKwConst)
-		if t == nil {
-			break
-		}
-		c = ps.constSpec()
-		if c == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, NewNodesNode([]Node{c}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t='var' '(' x=var_spec_semi* ')' {gen_decl(t, x)}
-	 */
-	for {
-		var t Node
-		var x Node
-		t = ps._expectK(TokenTypeKwVar)
-		if t == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftParen)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3 Node
-		for {
-			_3 = ps.varSpecSemi()
-			if _3 == nil {
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		x = NewNodesNode(_2)
-		_ = x
-		var _4 Node
-		_4 = ps._expectK(TokenTypeOpRightParen)
-		if _4 == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t='var' x=var_spec {gen_decl(t, [x])}
-	 */
-	for {
-		var t Node
-		var x Node
-		t = ps._expectK(TokenTypeKwVar)
-		if t == nil {
-			break
-		}
-		x = ps.varSpec()
-		if x == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t='type' '(' x=type_spec_semi* ')' {gen_decl(t, x)}
-	 */
-	for {
-		var t Node
-		var x Node
-		t = ps._expectK(TokenTypeKwType)
-		if t == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftParen)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3 Node
-		for {
-			_3 = ps.typeSpecSemi()
-			if _3 == nil {
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		x = NewNodesNode(_2)
-		_ = x
-		var _4 Node
-		_4 = ps._expectK(TokenTypeOpRightParen)
-		if _4 == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t='type' x=type_spec {gen_decl(t, [x])}
-	 */
-	for {
-		var t Node
-		var x Node
-		t = ps._expectK(TokenTypeKwType)
-		if t == nil {
-			break
-		}
-		x = ps.typeSpec()
-		if x == nil {
-			break
-		}
-		return NewGenDeclNode(ps._filePath, ps._fileContent, t, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-const_spec:
-| i=identifier_list (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
-*/
-func (ps *Parser) constSpec() Node {
-	/* i=identifier_list (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
-	 */
-	pos := ps._mark()
-	for {
-		var e Node
-		var i Node
-		var t Node
-		i = ps.identifierList()
-		if i == nil {
-			break
-		}
-		var _1 Node
-		for {
-			_ok := false
-			_p := ps._mark()
-			for {
-				t = ps.type_()
-				_ = t
-				var _2 Node
-				_2 = ps._expectK(TokenTypeOpEqual)
-				if _2 == nil {
-					break
-				}
-				e = ps.expressionList()
-				if e == nil {
-					break
-				}
-				_1 = e
-				_ok = true
-				break
-			}
-			if !_ok {
-				ps._reset(_p)
-				t = nil
-			}
-			break
-		}
-		_ = _1
-		return NewValueSpecNode(ps._filePath, ps._fileContent, i, t, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-const_spec_semi:
-| c=const_spec end_semi {c}
-*/
-func (ps *Parser) constSpecSemi() Node {
-	/* c=const_spec end_semi {c}
-	 */
-	pos := ps._mark()
-	for {
-		var c Node
-		c = ps.constSpec()
-		if c == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return c
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
 generic_type_parameters:
 | '[' ']' {_}
 | '[' x=generic_type_parameter_list ','? ']' {x}
@@ -11430,249 +12948,6 @@ func (ps *Parser) genericAtomType() Node {
 			break
 		}
 		return x
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-type_spec:
-| x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
-*/
-func (ps *Parser) typeSpec() Node {
-	/* x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
-	 */
-	pos := ps._mark()
-	for {
-		var eq Node
-		var t Node
-		var x Node
-		var y Node
-		x = ps._expectK(TokenTypeIdent)
-		if x == nil {
-			break
-		}
-		t = ps.genericTypeParameters()
-		_ = t
-		eq = ps._expectK(TokenTypeOpEqual)
-		_ = eq
-		y = ps.type_()
-		if y == nil {
-			break
-		}
-		return NewTypeSpecNode(ps._filePath, ps._fileContent, x, t, eq, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-type_spec_semi:
-| x=type_spec end_semi {x}
-*/
-func (ps *Parser) typeSpecSemi() Node {
-	/* x=type_spec end_semi {x}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps.typeSpec()
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return x
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-var_spec:
-| i=identifier_list t=type ('=' e=expression_list)? {value_spec(i, t, e)}
-| i=identifier_list '=' e=expression_list {value_spec(i, _, e)}
-*/
-func (ps *Parser) varSpec() Node {
-	/* i=identifier_list t=type ('=' e=expression_list)? {value_spec(i, t, e)}
-	 */
-	pos := ps._mark()
-	for {
-		var e Node
-		var i Node
-		var t Node
-		i = ps.identifierList()
-		if i == nil {
-			break
-		}
-		t = ps.type_()
-		if t == nil {
-			break
-		}
-		var _1 Node
-		for {
-			_ok := false
-			_p := ps._mark()
-			for {
-				var _2 Node
-				_2 = ps._expectK(TokenTypeOpEqual)
-				if _2 == nil {
-					break
-				}
-				e = ps.expressionList()
-				if e == nil {
-					break
-				}
-				_1 = e
-				_ok = true
-				break
-			}
-			if !_ok {
-				ps._reset(_p)
-			}
-			break
-		}
-		_ = _1
-		return NewValueSpecNode(ps._filePath, ps._fileContent, i, t, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* i=identifier_list '=' e=expression_list {value_spec(i, _, e)}
-	 */
-	for {
-		var e Node
-		var i Node
-		i = ps.identifierList()
-		if i == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpEqual)
-		if _1 == nil {
-			break
-		}
-		e = ps.expressionList()
-		if e == nil {
-			break
-		}
-		return NewValueSpecNode(ps._filePath, ps._fileContent, i, nil, e, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-var_spec_semi:
-| x=var_spec end_semi {x}
-*/
-func (ps *Parser) varSpecSemi() Node {
-	/* x=var_spec end_semi {x}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps.varSpec()
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return x
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-function_decl_no_body:
-| 'func' n=IDENT t=generic_type_parameters? s=signature? b='{'...'}'? {func_decl(_, n, t, s, b)}
-*/
-func (ps *Parser) functionDeclNoBody() Node {
-	/* 'func' n=IDENT t=generic_type_parameters? s=signature? b='{'...'}'? {func_decl(_, n, t, s, b)}
-	 */
-	pos := ps._mark()
-	for {
-		var b Node
-		var n Node
-		var s Node
-		var t Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwFunc)
-		if _1 == nil {
-			break
-		}
-		n = ps._expectK(TokenTypeIdent)
-		if n == nil {
-			break
-		}
-		t = ps.genericTypeParameters()
-		_ = t
-		s = ps.signature()
-		_ = s
-		for {
-			var _first, _last Node
-			if _first = ps._expectV("{"); _first == nil {
-				break
-			}
-			_depth := 1
-			for {
-				if ps._expectV("{") != nil {
-					_depth++
-				} else if _last = ps._expectV("}"); _last != nil {
-					_depth--
-					if _depth == 0 {
-						break
-					}
-				} else if ps._expectK(TokenTypeEndOfFile) != nil {
-					panic("bracket ellipsis reach end of file")
-				} else {
-					ps._anyToken()
-				}
-			}
-			b = ps._pseudoToken(_first, _last)
-			break
-		}
-		_ = b
-		return NewFuncDeclNode(ps._filePath, ps._fileContent, nil, n, t, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-function_decl:
-| 'func' n=IDENT t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
-*/
-func (ps *Parser) functionDecl() Node {
-	/* 'func' n=IDENT t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
-	 */
-	pos := ps._mark()
-	for {
-		var b Node
-		var n Node
-		var s Node
-		var t Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwFunc)
-		if _1 == nil {
-			break
-		}
-		n = ps._expectK(TokenTypeIdent)
-		if n == nil {
-			break
-		}
-		t = ps.genericTypeParameters()
-		_ = t
-		s = ps.signature()
-		_ = s
-		b = ps.block()
-		_ = b
-		return NewFuncDeclNode(ps._filePath, ps._fileContent, nil, n, t, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -11940,104 +13215,6 @@ func (ps *Parser) parameterDecl() Node {
 			break
 		}
 		return NewFieldNode(ps._filePath, ps._fileContent, nil, x, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-method_decl_no_body:
-| 'func' r=receiver n=IDENT s=signature b='{'...'}'? {func_decl(r,n,_,s,b)}
-*/
-func (ps *Parser) methodDeclNoBody() Node {
-	/* 'func' r=receiver n=IDENT s=signature b='{'...'}'? {func_decl(r,n,_,s,b)}
-	 */
-	pos := ps._mark()
-	for {
-		var b Node
-		var n Node
-		var r Node
-		var s Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwFunc)
-		if _1 == nil {
-			break
-		}
-		r = ps.receiver()
-		if r == nil {
-			break
-		}
-		n = ps._expectK(TokenTypeIdent)
-		if n == nil {
-			break
-		}
-		s = ps.signature()
-		if s == nil {
-			break
-		}
-		for {
-			var _first, _last Node
-			if _first = ps._expectV("{"); _first == nil {
-				break
-			}
-			_depth := 1
-			for {
-				if ps._expectV("{") != nil {
-					_depth++
-				} else if _last = ps._expectV("}"); _last != nil {
-					_depth--
-					if _depth == 0 {
-						break
-					}
-				} else if ps._expectK(TokenTypeEndOfFile) != nil {
-					panic("bracket ellipsis reach end of file")
-				} else {
-					ps._anyToken()
-				}
-			}
-			b = ps._pseudoToken(_first, _last)
-			break
-		}
-		_ = b
-		return NewFuncDeclNode(ps._filePath, ps._fileContent, r, n, nil, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-method_decl:
-| 'func' r=receiver n=IDENT s=signature b=block? {func_decl(r,n,_,s,b)}
-*/
-func (ps *Parser) methodDecl() Node {
-	/* 'func' r=receiver n=IDENT s=signature b=block? {func_decl(r,n,_,s,b)}
-	 */
-	pos := ps._mark()
-	for {
-		var b Node
-		var n Node
-		var r Node
-		var s Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwFunc)
-		if _1 == nil {
-			break
-		}
-		r = ps.receiver()
-		if r == nil {
-			break
-		}
-		n = ps._expectK(TokenTypeIdent)
-		if n == nil {
-			break
-		}
-		s = ps.signature()
-		if s == nil {
-			break
-		}
-		b = ps.block()
-		_ = b
-		return NewFuncDeclNode(ps._filePath, ps._fileContent, r, n, nil, s, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -13888,25 +15065,25 @@ func (ps *Parser) _group1() Node {
 
 /*
 _group_2:
-| IDENT
-| '.'
+| import_dot
+| import_ident
 */
 func (ps *Parser) _group2() Node {
-	/* IDENT
+	/* import_dot
 	 */
 	for {
 		var _1 Node
-		_1 = ps._expectK(TokenTypeIdent)
+		_1 = ps.importDot()
 		if _1 == nil {
 			break
 		}
 		return _1
 	}
-	/* '.'
+	/* import_ident
 	 */
 	for {
 		var _1 Node
-		_1 = ps._expectK(TokenTypeOpDot)
+		_1 = ps.importIdent()
 		if _1 == nil {
 			break
 		}
@@ -14104,7 +15281,6 @@ func (tk *Tokenizer) Clean(tokens []*Token) []*Token {
 
 type Any struct {
     depth int
-    noBody bool
 }
 
 func (ps *Parser) _getAny() *Any {
@@ -14128,46 +15304,6 @@ func (ps *Parser) _hackCompositeLitNode() Node {
 	}
 	return nil
 }
-
-func (ps *Parser) _hackFunctionDecl() Node {
-    if ps._getAny().noBody {
-        return ps.functionDeclNoBody()
-    } else {
-        return ps.functionDecl()
-    }
-}
-
-func (ps *Parser) _hackMethodDecl() Node {
-    if ps._getAny().noBody {
-        return ps.methodDeclNoBody()
-    } else {
-        return ps.methodDecl()
-    }
-}
-
-func ParseBytesNoBody(filePath string, b []byte) (Node, error) {
-	var err error
-	r, _ := DecodeBytes(b)
-	tokenizer := NewTokenizer(filePath, r)
-	var tokens []*Token
-	tokens, err = tokenizer.Parse()
-	if err != nil {
-		return nil, err
-	}
-	tokens = tokenizer.Clean(tokens)
-	parser := NewParser(filePath, r, tokens)
-	parser._any = &Any{noBody: true}
-	var ret Node
-	ret, err = parser.Parse()
-	if err != nil {
-		return nil, err
-	}
-	if ret != nil {
-		ret.BuildLink()
-	}
-	return ret, nil
-}
-
 func DumpNode(n Node, hook func(Node, map[string]string) string) string {
 	return CustomDumpNode(n, hook)
 }

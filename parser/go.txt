@@ -132,7 +132,9 @@ import_decl         <x>
 import_spec         <name source>
 value_spec          <names type values>
 type_spec           <name type_params eq type>
-gen_decl            <type specs>
+const_decl          <specs>
+var_decl            <specs>
+type_decl           <specs>
 func_decl           <recv name type_params type body>
 ellipsis            <elt>
 labeled_stmt        <label stmt>
@@ -140,15 +142,83 @@ generic_type_instantiation        <base args>
 ident               <x>
 make_expr           <x>
 new_expr            <x>
+
+package_ident   <x>
+import_dot      <x>
+import_ident    <x>
+import_path     <x>
+
+const_ident     <x>
+var_ident       <x>
+type_ident      <x>
+func_ident      <x>
+method_ident    <x>
 ------------------------------------------------------------------------------------------------------------------------
-file: 'package' n=IDENT ';' i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+# FILE ################################
+
+file: n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+
+# PACKAGE DECLARATION #################
+
+package_decl: 'package' n=package_ident ';' {n}
+package_ident: n=IDENT {package_ident(n)}
+
+# IMPORT DECLARATION ##################
 
 import_decl:
     | 'import' '(' specs=(t=import_spec end_semi {t})* ')' ';'? {import_decl(specs)}
     | 'import' specs=import_spec ';'? {import_decl([specs])}
-import_spec: name=(IDENT | '.')? path=STRING {import_spec(name, path)}
+import_spec: name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
+import_dot: d='.' {import_dot(d)}
+import_name: n=IDENT {import_ident(n)}
+import_path: s=STRING {import_path(s)}
+
+# TOP LEVEL DECLARATION ###############
 
 top_level_decl_semi: t=top_level_decl ';'? {t}
+top_level_decl: function_decl | method_decl | const_decl | var_decl | type_decl
+
+# FUNCTION DECLARATION ################
+
+function_decl: 'func' n=func_ident t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
+func_ident: n=IDENT {func_ident(n)}
+
+# METHOD DECLARATION ##################
+
+method_decl: 'func' r=receiver n=method_ident s=signature b=block? {func_decl(r,n,_,s,b)}
+method_ident: n=IDENT {method_ident(n)}
+
+# CONST DECLARATION ###################
+
+const_decl:
+    | 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
+    | 'const' c=const_spec {const_decl([c])}
+const_spec_semi: c=const_spec end_semi {c}
+const_spec: i=','.const_ident+ (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
+const_ident: n=IDENT {const_ident(n)}
+
+# VAR DECLARATION #####################
+
+var_decl:
+    | 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
+    | 'var' x=var_spec {var_decl([x])}
+var_spec_semi: x=var_spec end_semi {x}
+var_spec:
+    | i=','.var_ident+ t=type ('=' e=expression_list)? {value_spec(i, t, e)}
+    | i=','.var_ident+ '=' e=expression_list {value_spec(i, _, e)}
+var_ident: n=IDENT {var_ident(n)}
+
+# TYPE DECLARATION ####################
+
+type_decl:
+    | 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
+    | 'type' x=type_spec {type_decl([x])}
+type_spec_semi: x=type_spec end_semi {x}
+type_spec:
+    | x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
+type_ident: n=IDENT {type_ident(n)}
+
+# XXX #################################
 
 block: '{' x=statement_semi_list? '}' {block_stmt(x)}
 
@@ -264,18 +334,6 @@ map_type: 'map' '[' x=type ']' y=type {map_type(x,y)}
 
 qualified_ident: x=IDENT '.' y=IDENT { selector_expr(x, y) }
 
-top_level_decl: declaration | _hack_function_decl | _hack_method_decl
-declaration:
-    | t='const' '(' c=const_spec_semi* ')' {gen_decl(t, c)}
-    | t='const' c=const_spec {gen_decl(t, [c])}
-    | t='var' '(' x=var_spec_semi* ')' {gen_decl(t, x)}
-    | t='var' x=var_spec {gen_decl(t, [x])}
-    | t='type' '(' x=type_spec_semi* ')' {gen_decl(t, x)}
-    | t='type' x=type_spec {gen_decl(t, [x])}
-
-const_spec: i=identifier_list (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
-const_spec_semi: c=const_spec end_semi {c}
-
 generic_type_parameters:
     | '[' ']' {_}
     | '[' x=generic_type_parameter_list ','? ']' {x}
@@ -289,16 +347,8 @@ generic_union_type:
     | '|'.generic_atom_type+
 generic_atom_type:
     | '~'? x=type {x}
-type_spec:
-    | x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
-type_spec_semi: x=type_spec end_semi {x}
-var_spec:
-    | i=identifier_list t=type ('=' e=expression_list)? {value_spec(i, t, e)}
-    | i=identifier_list '=' e=expression_list {value_spec(i, _, e)}
-var_spec_semi: x=var_spec end_semi {x}
 
-function_decl_no_body: 'func' n=IDENT t=generic_type_parameters? s=signature? b='{'...'}'? {func_decl(_, n, t, s, b)}
-function_decl: 'func' n=IDENT t=generic_type_parameters? s=signature? b=block? {func_decl(_, n, t, s, b)}
+
 signature:
     | x=parameters y=result {func_type(x,y)}
     | x=parameters {func_type(x,_)}
@@ -319,8 +369,6 @@ parameter_decl:
     | t=ellipsis_type {field(_,t,_)}
     | x=type {field(_,x,_)}
 
-method_decl_no_body: 'func' r=receiver n=IDENT s=signature b='{'...'}'? {func_decl(r,n,_,s,b)}
-method_decl: 'func' r=receiver n=IDENT s=signature b=block? {func_decl(r,n,_,s,b)}
 receiver: parameters
 
 identifier_list: x=','.IDENT+ {x}
@@ -467,7 +515,6 @@ func (tk *Tokenizer) Clean(tokens []*Token) []*Token {
 
 type Any struct {
     depth int
-    noBody bool
 }
 
 func (ps *Parser) _getAny() *Any {
@@ -490,43 +537,4 @@ func (ps *Parser) _hackCompositeLitNode() Node {
 		return ps.compositeLit()
 	}
 	return nil
-}
-
-func (ps *Parser) _hackFunctionDecl() Node {
-    if ps._getAny().noBody {
-        return ps.functionDeclNoBody()
-    } else {
-        return ps.functionDecl()
-    }
-}
-
-func (ps *Parser) _hackMethodDecl() Node {
-    if ps._getAny().noBody {
-        return ps.methodDeclNoBody()
-    } else {
-        return ps.methodDecl()
-    }
-}
-
-func ParseBytesNoBody(filePath string, b []byte) (Node, error) {
-	var err error
-	r, _ := DecodeBytes(b)
-	tokenizer := NewTokenizer(filePath, r)
-	var tokens []*Token
-	tokens, err = tokenizer.Parse()
-	if err != nil {
-		return nil, err
-	}
-	tokens = tokenizer.Clean(tokens)
-	parser := NewParser(filePath, r, tokens)
-	parser._any = &Any{noBody: true}
-	var ret Node
-	ret, err = parser.Parse()
-	if err != nil {
-		return nil, err
-	}
-	if ret != nil {
-		ret.BuildLink()
-	}
-	return ret, nil
 }
