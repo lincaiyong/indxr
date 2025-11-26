@@ -168,7 +168,6 @@ const NodeTypeFile = "file"
 const NodeTypeAssignStmt = "assign_stmt"
 const NodeTypeBlockStmt = "block_stmt"
 const NodeTypeBranchStmt = "branch_stmt"
-const NodeTypeDeclStmt = "decl_stmt"
 const NodeTypeDeferStmt = "defer_stmt"
 const NodeTypeGoStmt = "go_stmt"
 const NodeTypeSendStmt = "send_stmt"
@@ -857,8 +856,8 @@ func (n *FileNode) Visit(beforeChildren func(node Node) (visitChildren, exit boo
 func (n *FileNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"file\""
-	ret["package_"] = DumpNode(n.Package(), hook)
-	ret["import_"] = DumpNode(n.Import(), hook)
+	ret["package"] = DumpNode(n.Package(), hook)
+	ret["import"] = DumpNode(n.Import(), hook)
 	ret["decls"] = DumpNode(n.Decls(), hook)
 	return ret
 }
@@ -1241,99 +1240,6 @@ func (n *BranchStmtNode) Dump(hook func(Node, map[string]string) string) map[str
 	return ret
 }
 
-func NewDeclStmtNode(filePath string, fileContent []rune, decl Node, start, end Position) Node {
-	if decl == nil {
-		decl = DummyNode
-	}
-	_1 := &DeclStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeDeclStmt, start, end),
-		decl:     decl,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type DeclStmtNode struct {
-	*BaseNode
-	decl Node
-}
-
-func (n *DeclStmtNode) Decl() Node {
-	return n.decl
-}
-
-func (n *DeclStmtNode) SetDecl(v Node) {
-	n.decl = v
-}
-
-func (n *DeclStmtNode) BuildLink() {
-	if !n.Decl().IsDummy() {
-		decl := n.Decl()
-		decl.BuildLink()
-		decl.SetParent(n)
-		decl.SetSelfField("decl")
-		decl.SetReplaceSelf(func(n Node) {
-			n.Parent().(*DeclStmtNode).SetDecl(n)
-		})
-	}
-}
-
-func (n *DeclStmtNode) Fields() []string {
-	return []string{
-		"decl",
-	}
-}
-
-func (n *DeclStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "decl" {
-		return n.Decl()
-	}
-	return nil
-}
-
-func (n *DeclStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetDecl(nodes[0])
-}
-
-func (n *DeclStmtNode) Fork() Node {
-	_ret := &DeclStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		decl:     n.decl.Fork(),
-	}
-	_ret.decl.SetParent(_ret)
-	return _ret
-}
-
-func (n *DeclStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.decl.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *DeclStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"decl_stmt\""
-	ret["decl"] = DumpNode(n.Decl(), hook)
-	return ret
-}
-
 func NewDeferStmtNode(filePath string, fileContent []rune, call Node, start, end Position) Node {
 	if call == nil {
 		call = DummyNode
@@ -1641,7 +1547,7 @@ func (n *SendStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit
 func (n *SendStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"send_stmt\""
-	ret["chan_"] = DumpNode(n.Chan(), hook)
+	ret["chan"] = DumpNode(n.Chan(), hook)
 	ret["value"] = DumpNode(n.Value(), hook)
 	return ret
 }
@@ -2053,7 +1959,7 @@ func (n *IfStmtNode) Dump(hook func(Node, map[string]string) string) map[string]
 	ret["init"] = DumpNode(n.Init(), hook)
 	ret["cond"] = DumpNode(n.Cond(), hook)
 	ret["body"] = DumpNode(n.Body(), hook)
-	ret["else_"] = DumpNode(n.Else(), hook)
+	ret["else"] = DumpNode(n.Else(), hook)
 	return ret
 }
 
@@ -3982,7 +3888,7 @@ func (n *TypeAssertExprNode) Dump(hook func(Node, map[string]string) string) map
 	ret := make(map[string]string)
 	ret["kind"] = "\"type_assert_expr\""
 	ret["x"] = DumpNode(n.X(), hook)
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	return ret
 }
 
@@ -4174,7 +4080,7 @@ func (n *SliceExprNode) Dump(hook func(Node, map[string]string) string) map[stri
 	ret["x"] = DumpNode(n.X(), hook)
 	ret["low"] = DumpNode(n.Low(), hook)
 	ret["high"] = DumpNode(n.High(), hook)
-	ret["max_"] = DumpNode(n.Max(), hook)
+	ret["max"] = DumpNode(n.Max(), hook)
 	return ret
 }
 
@@ -4425,7 +4331,7 @@ func (n *ArrayTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 func (n *ArrayTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"array_type\""
-	ret["len_"] = DumpNode(n.Len(), hook)
+	ret["len"] = DumpNode(n.Len(), hook)
 	ret["elt"] = DumpNode(n.Elt(), hook)
 	return ret
 }
@@ -5208,7 +5114,7 @@ func (n *CompositeLitNode) Visit(beforeChildren func(node Node) (visitChildren, 
 func (n *CompositeLitNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"composite_lit\""
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	ret["elts"] = DumpNode(n.Elts(), hook)
 	return ret
 }
@@ -5334,7 +5240,7 @@ func (n *FuncLitNode) Visit(beforeChildren func(node Node) (visitChildren, exit 
 func (n *FuncLitNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"func_lit\""
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	ret["body"] = DumpNode(n.Body(), hook)
 	return ret
 }
@@ -5838,7 +5744,7 @@ func (n *FieldNode) Dump(hook func(Node, map[string]string) string) map[string]s
 	ret := make(map[string]string)
 	ret["kind"] = "\"field\""
 	ret["names"] = DumpNode(n.Names(), hook)
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	ret["tag"] = DumpNode(n.Tag(), hook)
 	return ret
 }
@@ -6216,7 +6122,7 @@ func (n *ValueSpecNode) Dump(hook func(Node, map[string]string) string) map[stri
 	ret := make(map[string]string)
 	ret["kind"] = "\"value_spec\""
 	ret["names"] = DumpNode(n.Names(), hook)
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	ret["values"] = DumpNode(n.Values(), hook)
 	return ret
 }
@@ -6409,7 +6315,7 @@ func (n *TypeSpecNode) Dump(hook func(Node, map[string]string) string) map[strin
 	ret["name"] = DumpNode(n.Name(), hook)
 	ret["type_params"] = DumpNode(n.TypeParams(), hook)
 	ret["eq"] = DumpNode(n.Eq(), hook)
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	return ret
 }
 
@@ -6912,7 +6818,7 @@ func (n *FuncDeclNode) Dump(hook func(Node, map[string]string) string) map[strin
 	ret["recv"] = DumpNode(n.Recv(), hook)
 	ret["name"] = DumpNode(n.Name(), hook)
 	ret["type_params"] = DumpNode(n.TypeParams(), hook)
-	ret["type_"] = DumpNode(n.Type(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	ret["body"] = DumpNode(n.Body(), hook)
 	return ret
 }
@@ -7541,13 +7447,13 @@ func (n *NewExprNode) Dump(hook func(Node, map[string]string) string) map[string
 	return ret
 }
 
-func NewPackageIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewPackageIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &PackageIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypePackageIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -7555,32 +7461,32 @@ func NewPackageIdentNode(filePath string, fileContent []rune, x Node, start, end
 
 type PackageIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *PackageIdentNode) X() Node {
-	return n.x
+func (n *PackageIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *PackageIdentNode) SetX(v Node) {
-	n.x = v
+func (n *PackageIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *PackageIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*PackageIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*PackageIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *PackageIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -7588,8 +7494,8 @@ func (n *PackageIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -7598,15 +7504,15 @@ func (n *PackageIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *PackageIdentNode) Fork() Node {
 	_ret := &PackageIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -7618,7 +7524,7 @@ func (n *PackageIdentNode) Visit(beforeChildren func(node Node) (visitChildren, 
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -7630,17 +7536,17 @@ func (n *PackageIdentNode) Visit(beforeChildren func(node Node) (visitChildren, 
 func (n *PackageIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"package_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewImportDotNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewImportDotNode(filePath string, fileContent []rune, dot Node, start, end Position) Node {
+	if dot == nil {
+		dot = DummyNode
 	}
 	_1 := &ImportDotNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportDot, start, end),
-		x:        x,
+		dot:      dot,
 	}
 	creationHook(_1)
 	return _1
@@ -7648,32 +7554,32 @@ func NewImportDotNode(filePath string, fileContent []rune, x Node, start, end Po
 
 type ImportDotNode struct {
 	*BaseNode
-	x Node
+	dot Node
 }
 
-func (n *ImportDotNode) X() Node {
-	return n.x
+func (n *ImportDotNode) Dot() Node {
+	return n.dot
 }
 
-func (n *ImportDotNode) SetX(v Node) {
-	n.x = v
+func (n *ImportDotNode) SetDot(v Node) {
+	n.dot = v
 }
 
 func (n *ImportDotNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ImportDotNode).SetX(n)
+	if !n.Dot().IsDummy() {
+		dot := n.Dot()
+		dot.BuildLink()
+		dot.SetParent(n)
+		dot.SetSelfField("dot")
+		dot.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportDotNode).SetDot(n)
 		})
 	}
 }
 
 func (n *ImportDotNode) Fields() []string {
 	return []string{
-		"x",
+		"dot",
 	}
 }
 
@@ -7681,8 +7587,8 @@ func (n *ImportDotNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "dot" {
+		return n.Dot()
 	}
 	return nil
 }
@@ -7691,15 +7597,15 @@ func (n *ImportDotNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetDot(nodes[0])
 }
 
 func (n *ImportDotNode) Fork() Node {
 	_ret := &ImportDotNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		dot:      n.dot.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.dot.SetParent(_ret)
 	return _ret
 }
 
@@ -7711,7 +7617,7 @@ func (n *ImportDotNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.dot.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -7723,17 +7629,17 @@ func (n *ImportDotNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 func (n *ImportDotNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"import_dot\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["dot"] = DumpNode(n.Dot(), hook)
 	return ret
 }
 
-func NewImportIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewImportIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &ImportIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -7741,32 +7647,32 @@ func NewImportIdentNode(filePath string, fileContent []rune, x Node, start, end 
 
 type ImportIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *ImportIdentNode) X() Node {
-	return n.x
+func (n *ImportIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *ImportIdentNode) SetX(v Node) {
-	n.x = v
+func (n *ImportIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *ImportIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ImportIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *ImportIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -7774,8 +7680,8 @@ func (n *ImportIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -7784,15 +7690,15 @@ func (n *ImportIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *ImportIdentNode) Fork() Node {
 	_ret := &ImportIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -7804,7 +7710,7 @@ func (n *ImportIdentNode) Visit(beforeChildren func(node Node) (visitChildren, e
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -7816,17 +7722,17 @@ func (n *ImportIdentNode) Visit(beforeChildren func(node Node) (visitChildren, e
 func (n *ImportIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"import_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewImportPathNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewImportPathNode(filePath string, fileContent []rune, path Node, start, end Position) Node {
+	if path == nil {
+		path = DummyNode
 	}
 	_1 := &ImportPathNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeImportPath, start, end),
-		x:        x,
+		path:     path,
 	}
 	creationHook(_1)
 	return _1
@@ -7834,32 +7740,32 @@ func NewImportPathNode(filePath string, fileContent []rune, x Node, start, end P
 
 type ImportPathNode struct {
 	*BaseNode
-	x Node
+	path Node
 }
 
-func (n *ImportPathNode) X() Node {
-	return n.x
+func (n *ImportPathNode) Path() Node {
+	return n.path
 }
 
-func (n *ImportPathNode) SetX(v Node) {
-	n.x = v
+func (n *ImportPathNode) SetPath(v Node) {
+	n.path = v
 }
 
 func (n *ImportPathNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ImportPathNode).SetX(n)
+	if !n.Path().IsDummy() {
+		path := n.Path()
+		path.BuildLink()
+		path.SetParent(n)
+		path.SetSelfField("path")
+		path.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ImportPathNode).SetPath(n)
 		})
 	}
 }
 
 func (n *ImportPathNode) Fields() []string {
 	return []string{
-		"x",
+		"path",
 	}
 }
 
@@ -7867,8 +7773,8 @@ func (n *ImportPathNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "path" {
+		return n.Path()
 	}
 	return nil
 }
@@ -7877,15 +7783,15 @@ func (n *ImportPathNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetPath(nodes[0])
 }
 
 func (n *ImportPathNode) Fork() Node {
 	_ret := &ImportPathNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		path:     n.path.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.path.SetParent(_ret)
 	return _ret
 }
 
@@ -7897,7 +7803,7 @@ func (n *ImportPathNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.path.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -7909,17 +7815,17 @@ func (n *ImportPathNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 func (n *ImportPathNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"import_path\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["path"] = DumpNode(n.Path(), hook)
 	return ret
 }
 
-func NewConstIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewConstIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &ConstIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeConstIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -7927,32 +7833,32 @@ func NewConstIdentNode(filePath string, fileContent []rune, x Node, start, end P
 
 type ConstIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *ConstIdentNode) X() Node {
-	return n.x
+func (n *ConstIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *ConstIdentNode) SetX(v Node) {
-	n.x = v
+func (n *ConstIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *ConstIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ConstIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ConstIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *ConstIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -7960,8 +7866,8 @@ func (n *ConstIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -7970,15 +7876,15 @@ func (n *ConstIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *ConstIdentNode) Fork() Node {
 	_ret := &ConstIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -7990,7 +7896,7 @@ func (n *ConstIdentNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -8002,17 +7908,17 @@ func (n *ConstIdentNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 func (n *ConstIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"const_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewVarIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewVarIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &VarIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeVarIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -8020,32 +7926,32 @@ func NewVarIdentNode(filePath string, fileContent []rune, x Node, start, end Pos
 
 type VarIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *VarIdentNode) X() Node {
-	return n.x
+func (n *VarIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *VarIdentNode) SetX(v Node) {
-	n.x = v
+func (n *VarIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *VarIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*VarIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*VarIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *VarIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -8053,8 +7959,8 @@ func (n *VarIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -8063,15 +7969,15 @@ func (n *VarIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *VarIdentNode) Fork() Node {
 	_ret := &VarIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -8083,7 +7989,7 @@ func (n *VarIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -8095,17 +8001,17 @@ func (n *VarIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit
 func (n *VarIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"var_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewTypeIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewTypeIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &TypeIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -8113,32 +8019,32 @@ func NewTypeIdentNode(filePath string, fileContent []rune, x Node, start, end Po
 
 type TypeIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *TypeIdentNode) X() Node {
-	return n.x
+func (n *TypeIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *TypeIdentNode) SetX(v Node) {
-	n.x = v
+func (n *TypeIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *TypeIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *TypeIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -8146,8 +8052,8 @@ func (n *TypeIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -8156,15 +8062,15 @@ func (n *TypeIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *TypeIdentNode) Fork() Node {
 	_ret := &TypeIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -8176,7 +8082,7 @@ func (n *TypeIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -8188,17 +8094,17 @@ func (n *TypeIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 func (n *TypeIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"type_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewFuncIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewFuncIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &FuncIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeFuncIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -8206,32 +8112,32 @@ func NewFuncIdentNode(filePath string, fileContent []rune, x Node, start, end Po
 
 type FuncIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *FuncIdentNode) X() Node {
-	return n.x
+func (n *FuncIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *FuncIdentNode) SetX(v Node) {
-	n.x = v
+func (n *FuncIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *FuncIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*FuncIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*FuncIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *FuncIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -8239,8 +8145,8 @@ func (n *FuncIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -8249,15 +8155,15 @@ func (n *FuncIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *FuncIdentNode) Fork() Node {
 	_ret := &FuncIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -8269,7 +8175,7 @@ func (n *FuncIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -8281,17 +8187,17 @@ func (n *FuncIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 func (n *FuncIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"func_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
-func NewMethodIdentNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewMethodIdentNode(filePath string, fileContent []rune, ident Node, start, end Position) Node {
+	if ident == nil {
+		ident = DummyNode
 	}
 	_1 := &MethodIdentNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeMethodIdent, start, end),
-		x:        x,
+		ident:    ident,
 	}
 	creationHook(_1)
 	return _1
@@ -8299,32 +8205,32 @@ func NewMethodIdentNode(filePath string, fileContent []rune, x Node, start, end 
 
 type MethodIdentNode struct {
 	*BaseNode
-	x Node
+	ident Node
 }
 
-func (n *MethodIdentNode) X() Node {
-	return n.x
+func (n *MethodIdentNode) Ident() Node {
+	return n.ident
 }
 
-func (n *MethodIdentNode) SetX(v Node) {
-	n.x = v
+func (n *MethodIdentNode) SetIdent(v Node) {
+	n.ident = v
 }
 
 func (n *MethodIdentNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*MethodIdentNode).SetX(n)
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*MethodIdentNode).SetIdent(n)
 		})
 	}
 }
 
 func (n *MethodIdentNode) Fields() []string {
 	return []string{
-		"x",
+		"ident",
 	}
 }
 
@@ -8332,8 +8238,8 @@ func (n *MethodIdentNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "ident" {
+		return n.Ident()
 	}
 	return nil
 }
@@ -8342,15 +8248,15 @@ func (n *MethodIdentNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetIdent(nodes[0])
 }
 
 func (n *MethodIdentNode) Fork() Node {
 	_ret := &MethodIdentNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		ident:    n.ident.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
 	return _ret
 }
 
@@ -8362,7 +8268,7 @@ func (n *MethodIdentNode) Visit(beforeChildren func(node Node) (visitChildren, e
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.ident.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -8374,7 +8280,7 @@ func (n *MethodIdentNode) Visit(beforeChildren func(node Node) (visitChildren, e
 func (n *MethodIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"method_ident\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
 	return ret
 }
 
@@ -9736,10 +9642,10 @@ func (ps *Parser) importDot() Node {
 }
 
 /*
-import_name:
+import_ident:
 | n=IDENT {import_ident(n)}
 */
-func (ps *Parser) importName() Node {
+func (ps *Parser) importIdent() Node {
 	/* n=IDENT {import_ident(n)}
 	 */
 	pos := ps._mark()
@@ -10575,7 +10481,9 @@ func (ps *Parser) statementSemi() Node {
 
 /*
 statement:
-| x=declaration {decl_stmt(x)}
+| var_decl
+| const_decl
+| type_decl
 | labeled_stmt
 | simple_stmt
 | if_stmt
@@ -10593,18 +10501,36 @@ statement:
 | block
 */
 func (ps *Parser) statement() Node {
-	/* x=declaration {decl_stmt(x)}
+	/* var_decl
 	 */
-	pos := ps._mark()
 	for {
-		var x Node
-		x = ps.declaration()
-		if x == nil {
+		var _1 Node
+		_1 = ps.varDecl()
+		if _1 == nil {
 			break
 		}
-		return NewDeclStmtNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+		return _1
 	}
-	ps._reset(pos)
+	/* const_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.constDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* type_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.typeDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
 	/* labeled_stmt
 	 */
 	for {
@@ -10657,6 +10583,7 @@ func (ps *Parser) statement() Node {
 	}
 	/* 'select' b=select_body {select_stmt(b)}
 	 */
+	pos := ps._mark()
 	for {
 		var b Node
 		var _1 Node

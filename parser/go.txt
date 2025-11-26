@@ -92,7 +92,6 @@ file                <package import decls>
 assign_stmt         <lhs op rhs>
 block_stmt          <list>
 branch_stmt         <tok label>
-decl_stmt           <decl>
 defer_stmt          <call>
 go_stmt             <call>
 send_stmt           <chan value>
@@ -143,16 +142,16 @@ ident               <x>
 make_expr           <x>
 new_expr            <x>
 
-package_ident   <x>
-import_dot      <x>
-import_ident    <x>
-import_path     <x>
+package_ident   <ident>
+import_dot      <dot>
+import_ident    <ident>
+import_path     <path>
 
-const_ident     <x>
-var_ident       <x>
-type_ident      <x>
-func_ident      <x>
-method_ident    <x>
+const_ident     <ident>
+var_ident       <ident>
+type_ident      <ident>
+func_ident      <ident>
+method_ident    <ident>
 ------------------------------------------------------------------------------------------------------------------------
 # FILE ################################
 
@@ -170,7 +169,7 @@ import_decl:
     | 'import' specs=import_spec ';'? {import_decl([specs])}
 import_spec: name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
 import_dot: d='.' {import_dot(d)}
-import_name: n=IDENT {import_ident(n)}
+import_ident: n=IDENT {import_ident(n)}
 import_path: s=STRING {import_path(s)}
 
 # TOP LEVEL DECLARATION ###############
@@ -225,7 +224,9 @@ block: '{' x=statement_semi_list? '}' {block_stmt(x)}
 statement_semi_list: statement_semi+
 statement_semi: x=statement end_semi {x}
 statement:
-    | x=declaration {decl_stmt(x)}
+    | var_decl
+    | const_decl
+    | type_decl
     | labeled_stmt
     | simple_stmt
     | if_stmt
