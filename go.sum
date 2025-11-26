@@ -1,0 +1,6 @@
+github.com/lincaiyong/codeedge v0.0.0-20251024140949-e05498a31fea h1:zi0qZpNWgyLPQg9rPd1p6J+Bg+uFULI6Xky3kCuYJYc=
+github.com/lincaiyong/codeedge v0.0.0-20251024140949-e05498a31fea/go.mod h1:cfqrJ1EfLjcxsnsy2mcFanynwhuWKDmEVAmUQmqRcZ4=
+golang.org/x/mod v0.30.0 h1:fDEXFVZ/fmCKProc/yAXXUijritrDzahmwwefnjoPFk=
+golang.org/x/mod v0.30.0/go.mod h1:lAsf5O2EvJeSFMiBxXDki7sCgAxEUcZHXoXMKT4GJKc=
+golang.org/x/text v0.31.0 h1:aC8ghyu4JhP8VojJ2lEHBnochRno1sgL6nEi9WGFGMM=
+golang.org/x/text v0.31.0/go.mod h1:tKRAlv61yKIjGGHX/4tP1LTbc13YSec1pxVEWXzfoeM=
