@@ -129,8 +129,10 @@ field_list          <list>
 field               <names type tag>
 import_decl         <x>
 import_spec         <name source>
-value_spec          <names type values>
-type_spec           <name type_params eq type>
+const_spec          <names type values>
+var_spec            <names type values>
+type_eq_spec        <name type_params type>
+type_spec           <name type_params type>
 const_decl          <specs>
 var_decl            <specs>
 type_decl           <specs>
@@ -147,11 +149,16 @@ import_dot      <dot>
 import_ident    <ident>
 import_path     <path>
 
-const_ident     <ident>
-var_ident       <ident>
-type_ident      <ident>
-func_ident      <ident>
-method_ident    <ident>
+const_ident                 <ident>
+var_ident                   <ident>
+type_ident                  <ident>
+func_ident                  <ident>
+method_ident                <ident>
+type_parameter_ident        <ident>
+generic_type_parameter      <name type>
+union_type_constraint       <list>
+underlying_type_constraint  <type>
+type_constraint             <type>
 ------------------------------------------------------------------------------------------------------------------------
 # FILE ################################
 
@@ -193,7 +200,7 @@ const_decl:
     | 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
     | 'const' c=const_spec {const_decl([c])}
 const_spec_semi: c=const_spec end_semi {c}
-const_spec: i=','.const_ident+ (t=type? '=' e=expression_list)? {value_spec(i, t, e)}
+const_spec: i=','.const_ident+ (t=type? '=' e=expression_list)? {const_spec(i, t, e)}
 const_ident: n=IDENT {const_ident(n)}
 
 # VAR DECLARATION #####################
@@ -202,9 +209,7 @@ var_decl:
     | 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
     | 'var' x=var_spec {var_decl([x])}
 var_spec_semi: x=var_spec end_semi {x}
-var_spec:
-    | i=','.var_ident+ t=type ('=' e=expression_list)? {value_spec(i, t, e)}
-    | i=','.var_ident+ '=' e=expression_list {value_spec(i, _, e)}
+var_spec: i=','.var_ident+  (t=type? '=' e=expression_list)? {var_spec(i, t, e)}
 var_ident: n=IDENT {var_ident(n)}
 
 # TYPE DECLARATION ####################
@@ -214,8 +219,22 @@ type_decl:
     | 'type' x=type_spec {type_decl([x])}
 type_spec_semi: x=type_spec end_semi {x}
 type_spec:
-    | x=IDENT t=generic_type_parameters? eq='='? y=type {type_spec(x, t, eq, y)}
+    | x=type_ident t=generic_type_parameters? '=' y=type {type_eq_spec(x, t, y)}
+    | x=type_ident t=generic_type_parameters? y=type {type_spec(x, t, y)}
 type_ident: n=IDENT {type_ident(n)}
+
+# GENERIC #############################
+
+generic_type_parameters: '[' x=','.generic_type_parameter+ ','? ']' {x}
+generic_type_parameter:
+    | n=type_parameter_ident t=union_type_constraint? {generic_type_parameter(n, t)}
+type_parameter_ident: n=IDENT {type_parameter_ident(n)}
+union_type_constraint:
+    | x=type_constraint !'|' {x}
+    | x='|'.type_constraint+ {union_type_constraint(x)}
+type_constraint:
+    | '~' x=type {underlying_type_constraint(x)}
+    | x=type {type_constraint(x)}
 
 # XXX #################################
 
@@ -334,21 +353,6 @@ channel_type:
 map_type: 'map' '[' x=type ']' y=type {map_type(x,y)}
 
 qualified_ident: x=IDENT '.' y=IDENT { selector_expr(x, y) }
-
-generic_type_parameters:
-    | '[' ']' {_}
-    | '[' x=generic_type_parameter_list ','? ']' {x}
-generic_type_parameter_list:
-    | x=','.generic_type_parameter_decl+ {field_list(x)}
-generic_type_parameter_decl:
-    | x=identifier_list y=generic_union_type {field(x,y,_)}
-    | x=generic_union_type {field(_,x,_)}
-
-generic_union_type:
-    | '|'.generic_atom_type+
-generic_atom_type:
-    | '~'? x=type {x}
-
 
 signature:
     | x=parameters y=result {func_type(x,y)}
