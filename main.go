@@ -4,10 +4,18 @@ import "fmt"
 
 func main() {
 	fmt.Println("Hello World")
+	d := Demo{
+		T: [10]string{"x"},
+	}
+	fmt.Println(d)
 }
 
-type Demo[S, T any] struct{}
+const C = 10
 
-func (d Demo[S, T]) foo(a ...string) {
+type Demo struct {
+	X, T [C]string `json:"t,omitempty"`
+}
+
+func (d Demo) foo(a ...string) {
 
 }

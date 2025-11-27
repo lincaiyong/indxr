@@ -114,12 +114,13 @@ star_expr           <x>
 type_assert_expr    <x type>
 slice_expr          <x low high max>
 unary_expr          <op x>
-array_type          <len elt>
+slice_type          <type>
+array_type          <len type>
 chan_type           <dir value>
-func_type           <params results>
+func_type           <parameters results>
 interface_type      <methods>
 map_type            <key value>
-struct_type         <x>
+struct_type         <fields>
 basic_lit           <value>
 composite_lit       <type elts>
 func_lit            <type body>
@@ -168,12 +169,12 @@ result                              <name type>
 result_ident                        <ident>
 
 function_decl                       <name generic_parameters parameters results body>
-method_decl                         <receiver name generic_parameters parameters results body>
+method_decl                         <receiver name parameters results body>
 
 receiver_ident                      <ident>
 receiver_type_ident                 <ident>
 receiver_generic_type_ident         <ident>
-receiver                            <name star type>
+receiver                            <name star type generic_parameters>
 ------------------------------------------------------------------------------------------------------------------------
 # FILE ################################
 
@@ -267,6 +268,47 @@ type_constraint:
     | '~' x=type {generic_underlying_type_constraint(x)}
     | x=type {generic_type_constraint(x)}
 
+# TYPE ################################
+
+type:
+    | '(' x=type ')' {paren_type(x)}
+    | '*' x=type {star_expr(x)}
+    | '[' ']' x=type {slice_type(x)}
+    | '[' x=expression ']' y=type {array_type(x, y)}
+    | 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
+    | 'func' x=signature {x}
+    | 'interface' b=interface_body {interface_type(b)}
+    | map_type
+    | channel_type
+    | x=(qualified_type_ident | type_ident) '[' s=','.type+ ','? ']' {generic_type_instantiation(x, s)}
+    | qualified_type_ident
+    | type_ident
+qualified_type_ident: x=IDENT '.' y=IDENT {qualified_type_ident(x, y)}
+type_ident: x=IDENT {type_ident(x)}
+interface_body: '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
+
+struct_field_semi: x=struct_field end_semi {x}
+struct_field:
+    | x=struct_field_ident y=type z=tag? {field(x,y,z)}
+    | x=embedded_field y=tag? {field(_,x,y)}
+embedded_field:
+    | '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
+    | t=type_name_or_generic_type_instantiation {t}
+tag: x=STRING {basic_lit(x)}
+
+method_spec_and_interface_type_name_semi:
+    | method_spec_semi
+    | interface_type_name_semi
+    | '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
+method_spec_semi: x=method_spec end_semi {x}
+interface_type_name_semi: x=type_name end_semi {field(_,x,_)}
+
+channel_type:
+    | t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
+
+map_type: 'map' '[' x=type ']' y=type {map_type(x,y)}
+
+
 # XXX #################################
 
 block: '{' x=statement_semi_list? '}' {block_stmt(x)}
@@ -352,40 +394,6 @@ labeled_stmt:
     | x=IDENT ':' y=statement {labeled_stmt(x,y)}
     | x=IDENT ':' {labeled_stmt(x,_)}
 
-type:
-    | type_name_or_generic_type_instantiation
-    | type_lit
-    | '(' x=type ')' {paren_expr(x)}
-type_name_or_generic_type_instantiation:
-    | x=type_name y=generic_args {generic_type_instantiation(x, y)}
-    | type_name
-type_name: qualified_ident | IDENT
-generic_args: '[' s=','.type+ ']' {s}
-type_lit:
-    | '*' x=type {star_expr(x)}
-    | array_type
-    | struct_type
-    | 'func' x=signature {x}
-    | 'interface' b=interface_body {interface_type(b)}
-    | map_type
-    | channel_type
-interface_body: '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
-
-method_spec_and_interface_type_name_semi:
-    | method_spec_semi
-    | interface_type_name_semi
-    | '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
-method_spec_semi: x=method_spec end_semi {x}
-interface_type_name_semi: x=type_name end_semi {field(_,x,_)}
-
-channel_type:
-    | t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
-
-map_type: 'map' '[' x=type ']' y=type {map_type(x,y)}
-
-qualified_ident: x=IDENT '.' y=IDENT { selector_expr(x, y) }
-
-receiver: parameters
 
 identifier_list: x=','.IDENT+ {x}
 expression_list: ','.expression+
@@ -455,23 +463,9 @@ keyed_element:
 
 array_type:
     | '[' ']' x=type {array_type(_,x)}
-    | '[' e=ellipsis ']' x=type {array_type(e,x)}
     | '[' x=expression ']' y=type {array_type(x,y)}
 
 method_spec: x=IDENT y=signature {field([x],y,_)}
-
-struct_body: '{' x=field_decl_semi* '}' {field_list(x)}
-struct_type:
-    | 'struct' b=struct_body {struct_type(b)}
-
-field_decl_semi: x=field_decl end_semi {x}
-field_decl:
-    | x=identifier_list y=type z=tag? {field(x,y,z)}
-    | x=embedded_field y=tag? {field(_,x,y)}
-embedded_field:
-    | '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
-    | t=type_name_or_generic_type_instantiation {t}
-tag: x=STRING {basic_lit(x)}
 
 end_semi: ';' | &')'| &'}'
 
