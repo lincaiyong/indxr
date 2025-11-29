@@ -165,31 +165,6 @@ const NodeTypeDummy = "dummy"
 const NodeTypeToken = "token"
 const NodeTypeNodes = "nodes"
 const NodeTypeFile = "file"
-const NodeTypeAssignStmt = "assign_stmt"
-const NodeTypeBlockStmt = "block_stmt"
-const NodeTypeBranchStmt = "branch_stmt"
-const NodeTypeDeferStmt = "defer_stmt"
-const NodeTypeGoStmt = "go_stmt"
-const NodeTypeSendStmt = "send_stmt"
-const NodeTypeExprStmt = "expr_stmt"
-const NodeTypeIncDecStmt = "inc_dec_stmt"
-const NodeTypeIfStmt = "if_stmt"
-const NodeTypeForStmt = "for_stmt"
-const NodeTypeRangeStmt = "range_stmt"
-const NodeTypeSelectStmt = "select_stmt"
-const NodeTypeSwitchStmt = "switch_stmt"
-const NodeTypeTypeSwitchStmt = "type_switch_stmt"
-const NodeTypeReturnStmt = "return_stmt"
-const NodeTypeBinaryExpr = "binary_expr"
-const NodeTypeCallExpr = "call_expr"
-const NodeTypeIndexExpr = "index_expr"
-const NodeTypeKeyValueExpr = "key_value_expr"
-const NodeTypeParenExpr = "paren_expr"
-const NodeTypeSelectorExpr = "selector_expr"
-const NodeTypeStarExpr = "star_expr"
-const NodeTypeTypeAssertExpr = "type_assert_expr"
-const NodeTypeSliceExpr = "slice_expr"
-const NodeTypeUnaryExpr = "unary_expr"
 const NodeTypeSliceType = "slice_type"
 const NodeTypeArrayType = "array_type"
 const NodeTypeChanType = "chan_type"
@@ -197,6 +172,7 @@ const NodeTypeFuncType = "func_type"
 const NodeTypeInterfaceType = "interface_type"
 const NodeTypeMapType = "map_type"
 const NodeTypeStructType = "struct_type"
+const NodeTypeParenType = "paren_type"
 const NodeTypeBasicLit = "basic_lit"
 const NodeTypeCompositeLit = "composite_lit"
 const NodeTypeFuncLit = "func_lit"
@@ -214,7 +190,6 @@ const NodeTypeConstDecl = "const_decl"
 const NodeTypeVarDecl = "var_decl"
 const NodeTypeTypeDecl = "type_decl"
 const NodeTypeEllipsis = "ellipsis"
-const NodeTypeLabeledStmt = "labeled_stmt"
 const NodeTypeGenericTypeInstantiation = "generic_type_instantiation"
 const NodeTypeIdent = "ident"
 const NodeTypeMakeExpr = "make_expr"
@@ -244,6 +219,34 @@ const NodeTypeReceiverIdent = "receiver_ident"
 const NodeTypeReceiverTypeIdent = "receiver_type_ident"
 const NodeTypeReceiverGenericTypeIdent = "receiver_generic_type_ident"
 const NodeTypeReceiver = "receiver"
+const NodeTypeMethodField = "method_field"
+const NodeTypeQualifiedTypeIdent = "qualified_type_ident"
+const NodeTypeAssignStmt = "assign_stmt"
+const NodeTypeBlockStmt = "block_stmt"
+const NodeTypeBranchStmt = "branch_stmt"
+const NodeTypeDeferStmt = "defer_stmt"
+const NodeTypeGoStmt = "go_stmt"
+const NodeTypeSendStmt = "send_stmt"
+const NodeTypeExprStmt = "expr_stmt"
+const NodeTypeIncDecStmt = "inc_dec_stmt"
+const NodeTypeIfStmt = "if_stmt"
+const NodeTypeForStmt = "for_stmt"
+const NodeTypeRangeStmt = "range_stmt"
+const NodeTypeSelectStmt = "select_stmt"
+const NodeTypeSwitchStmt = "switch_stmt"
+const NodeTypeTypeSwitchStmt = "type_switch_stmt"
+const NodeTypeReturnStmt = "return_stmt"
+const NodeTypeLabeledStmt = "labeled_stmt"
+const NodeTypeBinaryExpr = "binary_expr"
+const NodeTypeCallExpr = "call_expr"
+const NodeTypeIndexExpr = "index_expr"
+const NodeTypeKeyValueExpr = "key_value_expr"
+const NodeTypeParenExpr = "paren_expr"
+const NodeTypeSelectorExpr = "selector_expr"
+const NodeTypeStarExpr = "star_expr"
+const NodeTypeTypeAssertExpr = "type_assert_expr"
+const NodeTypeSliceExpr = "slice_expr"
+const NodeTypeUnaryExpr = "unary_expr"
 
 func errorContext(filePath string, fileContent []rune, offset, lineIdx, charIdx int) string {
 	var lineStartOffset int
@@ -877,3354 +880,6 @@ func (n *FileNode) Dump(hook func(Node, map[string]string) string) map[string]st
 	ret["package"] = DumpNode(n.Package(), hook)
 	ret["import"] = DumpNode(n.Import(), hook)
 	ret["decls"] = DumpNode(n.Decls(), hook)
-	return ret
-}
-
-func NewAssignStmtNode(filePath string, fileContent []rune, lhs Node, op Node, rhs Node, start, end Position) Node {
-	if lhs == nil {
-		lhs = DummyNode
-	}
-	if op == nil {
-		op = DummyNode
-	}
-	if rhs == nil {
-		rhs = DummyNode
-	}
-	_1 := &AssignStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeAssignStmt, start, end),
-		lhs:      lhs,
-		op:       op,
-		rhs:      rhs,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type AssignStmtNode struct {
-	*BaseNode
-	lhs Node
-	op  Node
-	rhs Node
-}
-
-func (n *AssignStmtNode) Lhs() Node {
-	return n.lhs
-}
-
-func (n *AssignStmtNode) SetLhs(v Node) {
-	n.lhs = v
-}
-
-func (n *AssignStmtNode) Op() Node {
-	return n.op
-}
-
-func (n *AssignStmtNode) SetOp(v Node) {
-	n.op = v
-}
-
-func (n *AssignStmtNode) Rhs() Node {
-	return n.rhs
-}
-
-func (n *AssignStmtNode) SetRhs(v Node) {
-	n.rhs = v
-}
-
-func (n *AssignStmtNode) BuildLink() {
-	if !n.Lhs().IsDummy() {
-		lhs := n.Lhs()
-		lhs.BuildLink()
-		lhs.SetParent(n)
-		lhs.SetSelfField("lhs")
-		lhs.SetReplaceSelf(func(n Node) {
-			n.Parent().(*AssignStmtNode).SetLhs(n)
-		})
-	}
-	if !n.Op().IsDummy() {
-		op := n.Op()
-		op.BuildLink()
-		op.SetParent(n)
-		op.SetSelfField("op")
-		op.SetReplaceSelf(func(n Node) {
-			n.Parent().(*AssignStmtNode).SetOp(n)
-		})
-	}
-	if !n.Rhs().IsDummy() {
-		rhs := n.Rhs()
-		rhs.BuildLink()
-		rhs.SetParent(n)
-		rhs.SetSelfField("rhs")
-		rhs.SetReplaceSelf(func(n Node) {
-			n.Parent().(*AssignStmtNode).SetRhs(n)
-		})
-	}
-}
-
-func (n *AssignStmtNode) Fields() []string {
-	return []string{
-		"lhs",
-		"op",
-		"rhs",
-	}
-}
-
-func (n *AssignStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "lhs" {
-		return n.Lhs()
-	}
-	if field == "op" {
-		return n.Op()
-	}
-	if field == "rhs" {
-		return n.Rhs()
-	}
-	return nil
-}
-
-func (n *AssignStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 3 {
-		return
-	}
-	n.SetLhs(nodes[0])
-	n.SetOp(nodes[1])
-	n.SetRhs(nodes[2])
-}
-
-func (n *AssignStmtNode) Fork() Node {
-	_ret := &AssignStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		lhs:      n.lhs.Fork(),
-		op:       n.op.Fork(),
-		rhs:      n.rhs.Fork(),
-	}
-	_ret.lhs.SetParent(_ret)
-	_ret.op.SetParent(_ret)
-	_ret.rhs.SetParent(_ret)
-	return _ret
-}
-
-func (n *AssignStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.lhs.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.op.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.rhs.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *AssignStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"assign_stmt\""
-	ret["lhs"] = DumpNode(n.Lhs(), hook)
-	ret["op"] = DumpNode(n.Op(), hook)
-	ret["rhs"] = DumpNode(n.Rhs(), hook)
-	return ret
-}
-
-func NewBlockStmtNode(filePath string, fileContent []rune, list Node, start, end Position) Node {
-	if list == nil {
-		list = DummyNode
-	}
-	_1 := &BlockStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBlockStmt, start, end),
-		list:     list,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type BlockStmtNode struct {
-	*BaseNode
-	list Node
-}
-
-func (n *BlockStmtNode) List() Node {
-	return n.list
-}
-
-func (n *BlockStmtNode) SetList(v Node) {
-	n.list = v
-}
-
-func (n *BlockStmtNode) BuildLink() {
-	if !n.List().IsDummy() {
-		list := n.List()
-		list.BuildLink()
-		list.SetParent(n)
-		list.SetSelfField("list")
-		list.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BlockStmtNode).SetList(n)
-		})
-	}
-}
-
-func (n *BlockStmtNode) Fields() []string {
-	return []string{
-		"list",
-	}
-}
-
-func (n *BlockStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "list" {
-		return n.List()
-	}
-	return nil
-}
-
-func (n *BlockStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetList(nodes[0])
-}
-
-func (n *BlockStmtNode) Fork() Node {
-	_ret := &BlockStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		list:     n.list.Fork(),
-	}
-	_ret.list.SetParent(_ret)
-	return _ret
-}
-
-func (n *BlockStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.list.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *BlockStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"block_stmt\""
-	ret["list"] = DumpNode(n.List(), hook)
-	return ret
-}
-
-func NewBranchStmtNode(filePath string, fileContent []rune, tok Node, label Node, start, end Position) Node {
-	if tok == nil {
-		tok = DummyNode
-	}
-	if label == nil {
-		label = DummyNode
-	}
-	_1 := &BranchStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBranchStmt, start, end),
-		tok:      tok,
-		label:    label,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type BranchStmtNode struct {
-	*BaseNode
-	tok   Node
-	label Node
-}
-
-func (n *BranchStmtNode) Tok() Node {
-	return n.tok
-}
-
-func (n *BranchStmtNode) SetTok(v Node) {
-	n.tok = v
-}
-
-func (n *BranchStmtNode) Label() Node {
-	return n.label
-}
-
-func (n *BranchStmtNode) SetLabel(v Node) {
-	n.label = v
-}
-
-func (n *BranchStmtNode) BuildLink() {
-	if !n.Tok().IsDummy() {
-		tok := n.Tok()
-		tok.BuildLink()
-		tok.SetParent(n)
-		tok.SetSelfField("tok")
-		tok.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BranchStmtNode).SetTok(n)
-		})
-	}
-	if !n.Label().IsDummy() {
-		label := n.Label()
-		label.BuildLink()
-		label.SetParent(n)
-		label.SetSelfField("label")
-		label.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BranchStmtNode).SetLabel(n)
-		})
-	}
-}
-
-func (n *BranchStmtNode) Fields() []string {
-	return []string{
-		"tok",
-		"label",
-	}
-}
-
-func (n *BranchStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "tok" {
-		return n.Tok()
-	}
-	if field == "label" {
-		return n.Label()
-	}
-	return nil
-}
-
-func (n *BranchStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetTok(nodes[0])
-	n.SetLabel(nodes[1])
-}
-
-func (n *BranchStmtNode) Fork() Node {
-	_ret := &BranchStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		tok:      n.tok.Fork(),
-		label:    n.label.Fork(),
-	}
-	_ret.tok.SetParent(_ret)
-	_ret.label.SetParent(_ret)
-	return _ret
-}
-
-func (n *BranchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.tok.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.label.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *BranchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"branch_stmt\""
-	ret["tok"] = DumpNode(n.Tok(), hook)
-	ret["label"] = DumpNode(n.Label(), hook)
-	return ret
-}
-
-func NewDeferStmtNode(filePath string, fileContent []rune, call Node, start, end Position) Node {
-	if call == nil {
-		call = DummyNode
-	}
-	_1 := &DeferStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeDeferStmt, start, end),
-		call:     call,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type DeferStmtNode struct {
-	*BaseNode
-	call Node
-}
-
-func (n *DeferStmtNode) Call() Node {
-	return n.call
-}
-
-func (n *DeferStmtNode) SetCall(v Node) {
-	n.call = v
-}
-
-func (n *DeferStmtNode) BuildLink() {
-	if !n.Call().IsDummy() {
-		call := n.Call()
-		call.BuildLink()
-		call.SetParent(n)
-		call.SetSelfField("call")
-		call.SetReplaceSelf(func(n Node) {
-			n.Parent().(*DeferStmtNode).SetCall(n)
-		})
-	}
-}
-
-func (n *DeferStmtNode) Fields() []string {
-	return []string{
-		"call",
-	}
-}
-
-func (n *DeferStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "call" {
-		return n.Call()
-	}
-	return nil
-}
-
-func (n *DeferStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetCall(nodes[0])
-}
-
-func (n *DeferStmtNode) Fork() Node {
-	_ret := &DeferStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		call:     n.call.Fork(),
-	}
-	_ret.call.SetParent(_ret)
-	return _ret
-}
-
-func (n *DeferStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.call.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *DeferStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"defer_stmt\""
-	ret["call"] = DumpNode(n.Call(), hook)
-	return ret
-}
-
-func NewGoStmtNode(filePath string, fileContent []rune, call Node, start, end Position) Node {
-	if call == nil {
-		call = DummyNode
-	}
-	_1 := &GoStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeGoStmt, start, end),
-		call:     call,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type GoStmtNode struct {
-	*BaseNode
-	call Node
-}
-
-func (n *GoStmtNode) Call() Node {
-	return n.call
-}
-
-func (n *GoStmtNode) SetCall(v Node) {
-	n.call = v
-}
-
-func (n *GoStmtNode) BuildLink() {
-	if !n.Call().IsDummy() {
-		call := n.Call()
-		call.BuildLink()
-		call.SetParent(n)
-		call.SetSelfField("call")
-		call.SetReplaceSelf(func(n Node) {
-			n.Parent().(*GoStmtNode).SetCall(n)
-		})
-	}
-}
-
-func (n *GoStmtNode) Fields() []string {
-	return []string{
-		"call",
-	}
-}
-
-func (n *GoStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "call" {
-		return n.Call()
-	}
-	return nil
-}
-
-func (n *GoStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetCall(nodes[0])
-}
-
-func (n *GoStmtNode) Fork() Node {
-	_ret := &GoStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		call:     n.call.Fork(),
-	}
-	_ret.call.SetParent(_ret)
-	return _ret
-}
-
-func (n *GoStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.call.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *GoStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"go_stmt\""
-	ret["call"] = DumpNode(n.Call(), hook)
-	return ret
-}
-
-func NewSendStmtNode(filePath string, fileContent []rune, chan_ Node, value Node, start, end Position) Node {
-	if chan_ == nil {
-		chan_ = DummyNode
-	}
-	if value == nil {
-		value = DummyNode
-	}
-	_1 := &SendStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSendStmt, start, end),
-		chan_:    chan_,
-		value:    value,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type SendStmtNode struct {
-	*BaseNode
-	chan_ Node
-	value Node
-}
-
-func (n *SendStmtNode) Chan() Node {
-	return n.chan_
-}
-
-func (n *SendStmtNode) SetChan(v Node) {
-	n.chan_ = v
-}
-
-func (n *SendStmtNode) Value() Node {
-	return n.value
-}
-
-func (n *SendStmtNode) SetValue(v Node) {
-	n.value = v
-}
-
-func (n *SendStmtNode) BuildLink() {
-	if !n.Chan().IsDummy() {
-		chan_ := n.Chan()
-		chan_.BuildLink()
-		chan_.SetParent(n)
-		chan_.SetSelfField("chan_")
-		chan_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SendStmtNode).SetChan(n)
-		})
-	}
-	if !n.Value().IsDummy() {
-		value := n.Value()
-		value.BuildLink()
-		value.SetParent(n)
-		value.SetSelfField("value")
-		value.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SendStmtNode).SetValue(n)
-		})
-	}
-}
-
-func (n *SendStmtNode) Fields() []string {
-	return []string{
-		"chan_",
-		"value",
-	}
-}
-
-func (n *SendStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "chan_" {
-		return n.Chan()
-	}
-	if field == "value" {
-		return n.Value()
-	}
-	return nil
-}
-
-func (n *SendStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetChan(nodes[0])
-	n.SetValue(nodes[1])
-}
-
-func (n *SendStmtNode) Fork() Node {
-	_ret := &SendStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		chan_:    n.chan_.Fork(),
-		value:    n.value.Fork(),
-	}
-	_ret.chan_.SetParent(_ret)
-	_ret.value.SetParent(_ret)
-	return _ret
-}
-
-func (n *SendStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.chan_.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.value.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *SendStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"send_stmt\""
-	ret["chan"] = DumpNode(n.Chan(), hook)
-	ret["value"] = DumpNode(n.Value(), hook)
-	return ret
-}
-
-func NewExprStmtNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	_1 := &ExprStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeExprStmt, start, end),
-		x:        x,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type ExprStmtNode struct {
-	*BaseNode
-	x Node
-}
-
-func (n *ExprStmtNode) X() Node {
-	return n.x
-}
-
-func (n *ExprStmtNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *ExprStmtNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ExprStmtNode).SetX(n)
-		})
-	}
-}
-
-func (n *ExprStmtNode) Fields() []string {
-	return []string{
-		"x",
-	}
-}
-
-func (n *ExprStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	return nil
-}
-
-func (n *ExprStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetX(nodes[0])
-}
-
-func (n *ExprStmtNode) Fork() Node {
-	_ret := &ExprStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	return _ret
-}
-
-func (n *ExprStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *ExprStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"expr_stmt\""
-	ret["x"] = DumpNode(n.X(), hook)
-	return ret
-}
-
-func NewIncDecStmtNode(filePath string, fileContent []rune, x Node, tok Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if tok == nil {
-		tok = DummyNode
-	}
-	_1 := &IncDecStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIncDecStmt, start, end),
-		x:        x,
-		tok:      tok,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type IncDecStmtNode struct {
-	*BaseNode
-	x   Node
-	tok Node
-}
-
-func (n *IncDecStmtNode) X() Node {
-	return n.x
-}
-
-func (n *IncDecStmtNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *IncDecStmtNode) Tok() Node {
-	return n.tok
-}
-
-func (n *IncDecStmtNode) SetTok(v Node) {
-	n.tok = v
-}
-
-func (n *IncDecStmtNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IncDecStmtNode).SetX(n)
-		})
-	}
-	if !n.Tok().IsDummy() {
-		tok := n.Tok()
-		tok.BuildLink()
-		tok.SetParent(n)
-		tok.SetSelfField("tok")
-		tok.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IncDecStmtNode).SetTok(n)
-		})
-	}
-}
-
-func (n *IncDecStmtNode) Fields() []string {
-	return []string{
-		"x",
-		"tok",
-	}
-}
-
-func (n *IncDecStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "tok" {
-		return n.Tok()
-	}
-	return nil
-}
-
-func (n *IncDecStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetTok(nodes[1])
-}
-
-func (n *IncDecStmtNode) Fork() Node {
-	_ret := &IncDecStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		tok:      n.tok.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.tok.SetParent(_ret)
-	return _ret
-}
-
-func (n *IncDecStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.tok.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *IncDecStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"inc_dec_stmt\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["tok"] = DumpNode(n.Tok(), hook)
-	return ret
-}
-
-func NewIfStmtNode(filePath string, fileContent []rune, init Node, cond Node, body Node, else_ Node, start, end Position) Node {
-	if init == nil {
-		init = DummyNode
-	}
-	if cond == nil {
-		cond = DummyNode
-	}
-	if body == nil {
-		body = DummyNode
-	}
-	if else_ == nil {
-		else_ = DummyNode
-	}
-	_1 := &IfStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIfStmt, start, end),
-		init:     init,
-		cond:     cond,
-		body:     body,
-		else_:    else_,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type IfStmtNode struct {
-	*BaseNode
-	init  Node
-	cond  Node
-	body  Node
-	else_ Node
-}
-
-func (n *IfStmtNode) Init() Node {
-	return n.init
-}
-
-func (n *IfStmtNode) SetInit(v Node) {
-	n.init = v
-}
-
-func (n *IfStmtNode) Cond() Node {
-	return n.cond
-}
-
-func (n *IfStmtNode) SetCond(v Node) {
-	n.cond = v
-}
-
-func (n *IfStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *IfStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *IfStmtNode) Else() Node {
-	return n.else_
-}
-
-func (n *IfStmtNode) SetElse(v Node) {
-	n.else_ = v
-}
-
-func (n *IfStmtNode) BuildLink() {
-	if !n.Init().IsDummy() {
-		init := n.Init()
-		init.BuildLink()
-		init.SetParent(n)
-		init.SetSelfField("init")
-		init.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IfStmtNode).SetInit(n)
-		})
-	}
-	if !n.Cond().IsDummy() {
-		cond := n.Cond()
-		cond.BuildLink()
-		cond.SetParent(n)
-		cond.SetSelfField("cond")
-		cond.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IfStmtNode).SetCond(n)
-		})
-	}
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IfStmtNode).SetBody(n)
-		})
-	}
-	if !n.Else().IsDummy() {
-		else_ := n.Else()
-		else_.BuildLink()
-		else_.SetParent(n)
-		else_.SetSelfField("else_")
-		else_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IfStmtNode).SetElse(n)
-		})
-	}
-}
-
-func (n *IfStmtNode) Fields() []string {
-	return []string{
-		"init",
-		"cond",
-		"body",
-		"else_",
-	}
-}
-
-func (n *IfStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "init" {
-		return n.Init()
-	}
-	if field == "cond" {
-		return n.Cond()
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	if field == "else_" {
-		return n.Else()
-	}
-	return nil
-}
-
-func (n *IfStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 4 {
-		return
-	}
-	n.SetInit(nodes[0])
-	n.SetCond(nodes[1])
-	n.SetBody(nodes[2])
-	n.SetElse(nodes[3])
-}
-
-func (n *IfStmtNode) Fork() Node {
-	_ret := &IfStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		init:     n.init.Fork(),
-		cond:     n.cond.Fork(),
-		body:     n.body.Fork(),
-		else_:    n.else_.Fork(),
-	}
-	_ret.init.SetParent(_ret)
-	_ret.cond.SetParent(_ret)
-	_ret.body.SetParent(_ret)
-	_ret.else_.SetParent(_ret)
-	return _ret
-}
-
-func (n *IfStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.init.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.cond.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.else_.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *IfStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"if_stmt\""
-	ret["init"] = DumpNode(n.Init(), hook)
-	ret["cond"] = DumpNode(n.Cond(), hook)
-	ret["body"] = DumpNode(n.Body(), hook)
-	ret["else"] = DumpNode(n.Else(), hook)
-	return ret
-}
-
-func NewForStmtNode(filePath string, fileContent []rune, init Node, cond Node, post Node, body Node, start, end Position) Node {
-	if init == nil {
-		init = DummyNode
-	}
-	if cond == nil {
-		cond = DummyNode
-	}
-	if post == nil {
-		post = DummyNode
-	}
-	if body == nil {
-		body = DummyNode
-	}
-	_1 := &ForStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeForStmt, start, end),
-		init:     init,
-		cond:     cond,
-		post:     post,
-		body:     body,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type ForStmtNode struct {
-	*BaseNode
-	init Node
-	cond Node
-	post Node
-	body Node
-}
-
-func (n *ForStmtNode) Init() Node {
-	return n.init
-}
-
-func (n *ForStmtNode) SetInit(v Node) {
-	n.init = v
-}
-
-func (n *ForStmtNode) Cond() Node {
-	return n.cond
-}
-
-func (n *ForStmtNode) SetCond(v Node) {
-	n.cond = v
-}
-
-func (n *ForStmtNode) Post() Node {
-	return n.post
-}
-
-func (n *ForStmtNode) SetPost(v Node) {
-	n.post = v
-}
-
-func (n *ForStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *ForStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *ForStmtNode) BuildLink() {
-	if !n.Init().IsDummy() {
-		init := n.Init()
-		init.BuildLink()
-		init.SetParent(n)
-		init.SetSelfField("init")
-		init.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ForStmtNode).SetInit(n)
-		})
-	}
-	if !n.Cond().IsDummy() {
-		cond := n.Cond()
-		cond.BuildLink()
-		cond.SetParent(n)
-		cond.SetSelfField("cond")
-		cond.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ForStmtNode).SetCond(n)
-		})
-	}
-	if !n.Post().IsDummy() {
-		post := n.Post()
-		post.BuildLink()
-		post.SetParent(n)
-		post.SetSelfField("post")
-		post.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ForStmtNode).SetPost(n)
-		})
-	}
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ForStmtNode).SetBody(n)
-		})
-	}
-}
-
-func (n *ForStmtNode) Fields() []string {
-	return []string{
-		"init",
-		"cond",
-		"post",
-		"body",
-	}
-}
-
-func (n *ForStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "init" {
-		return n.Init()
-	}
-	if field == "cond" {
-		return n.Cond()
-	}
-	if field == "post" {
-		return n.Post()
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	return nil
-}
-
-func (n *ForStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 4 {
-		return
-	}
-	n.SetInit(nodes[0])
-	n.SetCond(nodes[1])
-	n.SetPost(nodes[2])
-	n.SetBody(nodes[3])
-}
-
-func (n *ForStmtNode) Fork() Node {
-	_ret := &ForStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		init:     n.init.Fork(),
-		cond:     n.cond.Fork(),
-		post:     n.post.Fork(),
-		body:     n.body.Fork(),
-	}
-	_ret.init.SetParent(_ret)
-	_ret.cond.SetParent(_ret)
-	_ret.post.SetParent(_ret)
-	_ret.body.SetParent(_ret)
-	return _ret
-}
-
-func (n *ForStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.init.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.cond.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.post.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *ForStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"for_stmt\""
-	ret["init"] = DumpNode(n.Init(), hook)
-	ret["cond"] = DumpNode(n.Cond(), hook)
-	ret["post"] = DumpNode(n.Post(), hook)
-	ret["body"] = DumpNode(n.Body(), hook)
-	return ret
-}
-
-func NewRangeStmtNode(filePath string, fileContent []rune, key Node, value Node, x Node, body Node, tok Node, start, end Position) Node {
-	if key == nil {
-		key = DummyNode
-	}
-	if value == nil {
-		value = DummyNode
-	}
-	if x == nil {
-		x = DummyNode
-	}
-	if body == nil {
-		body = DummyNode
-	}
-	if tok == nil {
-		tok = DummyNode
-	}
-	_1 := &RangeStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeRangeStmt, start, end),
-		key:      key,
-		value:    value,
-		x:        x,
-		body:     body,
-		tok:      tok,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type RangeStmtNode struct {
-	*BaseNode
-	key   Node
-	value Node
-	x     Node
-	body  Node
-	tok   Node
-}
-
-func (n *RangeStmtNode) Key() Node {
-	return n.key
-}
-
-func (n *RangeStmtNode) SetKey(v Node) {
-	n.key = v
-}
-
-func (n *RangeStmtNode) Value() Node {
-	return n.value
-}
-
-func (n *RangeStmtNode) SetValue(v Node) {
-	n.value = v
-}
-
-func (n *RangeStmtNode) X() Node {
-	return n.x
-}
-
-func (n *RangeStmtNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *RangeStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *RangeStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *RangeStmtNode) Tok() Node {
-	return n.tok
-}
-
-func (n *RangeStmtNode) SetTok(v Node) {
-	n.tok = v
-}
-
-func (n *RangeStmtNode) BuildLink() {
-	if !n.Key().IsDummy() {
-		key := n.Key()
-		key.BuildLink()
-		key.SetParent(n)
-		key.SetSelfField("key")
-		key.SetReplaceSelf(func(n Node) {
-			n.Parent().(*RangeStmtNode).SetKey(n)
-		})
-	}
-	if !n.Value().IsDummy() {
-		value := n.Value()
-		value.BuildLink()
-		value.SetParent(n)
-		value.SetSelfField("value")
-		value.SetReplaceSelf(func(n Node) {
-			n.Parent().(*RangeStmtNode).SetValue(n)
-		})
-	}
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*RangeStmtNode).SetX(n)
-		})
-	}
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*RangeStmtNode).SetBody(n)
-		})
-	}
-	if !n.Tok().IsDummy() {
-		tok := n.Tok()
-		tok.BuildLink()
-		tok.SetParent(n)
-		tok.SetSelfField("tok")
-		tok.SetReplaceSelf(func(n Node) {
-			n.Parent().(*RangeStmtNode).SetTok(n)
-		})
-	}
-}
-
-func (n *RangeStmtNode) Fields() []string {
-	return []string{
-		"key",
-		"value",
-		"x",
-		"body",
-		"tok",
-	}
-}
-
-func (n *RangeStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "key" {
-		return n.Key()
-	}
-	if field == "value" {
-		return n.Value()
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	if field == "tok" {
-		return n.Tok()
-	}
-	return nil
-}
-
-func (n *RangeStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 5 {
-		return
-	}
-	n.SetKey(nodes[0])
-	n.SetValue(nodes[1])
-	n.SetX(nodes[2])
-	n.SetBody(nodes[3])
-	n.SetTok(nodes[4])
-}
-
-func (n *RangeStmtNode) Fork() Node {
-	_ret := &RangeStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		key:      n.key.Fork(),
-		value:    n.value.Fork(),
-		x:        n.x.Fork(),
-		body:     n.body.Fork(),
-		tok:      n.tok.Fork(),
-	}
-	_ret.key.SetParent(_ret)
-	_ret.value.SetParent(_ret)
-	_ret.x.SetParent(_ret)
-	_ret.body.SetParent(_ret)
-	_ret.tok.SetParent(_ret)
-	return _ret
-}
-
-func (n *RangeStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.key.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.value.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.tok.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *RangeStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"range_stmt\""
-	ret["key"] = DumpNode(n.Key(), hook)
-	ret["value"] = DumpNode(n.Value(), hook)
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["body"] = DumpNode(n.Body(), hook)
-	ret["tok"] = DumpNode(n.Tok(), hook)
-	return ret
-}
-
-func NewSelectStmtNode(filePath string, fileContent []rune, body Node, start, end Position) Node {
-	if body == nil {
-		body = DummyNode
-	}
-	_1 := &SelectStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSelectStmt, start, end),
-		body:     body,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type SelectStmtNode struct {
-	*BaseNode
-	body Node
-}
-
-func (n *SelectStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *SelectStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *SelectStmtNode) BuildLink() {
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SelectStmtNode).SetBody(n)
-		})
-	}
-}
-
-func (n *SelectStmtNode) Fields() []string {
-	return []string{
-		"body",
-	}
-}
-
-func (n *SelectStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	return nil
-}
-
-func (n *SelectStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetBody(nodes[0])
-}
-
-func (n *SelectStmtNode) Fork() Node {
-	_ret := &SelectStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		body:     n.body.Fork(),
-	}
-	_ret.body.SetParent(_ret)
-	return _ret
-}
-
-func (n *SelectStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *SelectStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"select_stmt\""
-	ret["body"] = DumpNode(n.Body(), hook)
-	return ret
-}
-
-func NewSwitchStmtNode(filePath string, fileContent []rune, init Node, tag Node, body Node, start, end Position) Node {
-	if init == nil {
-		init = DummyNode
-	}
-	if tag == nil {
-		tag = DummyNode
-	}
-	if body == nil {
-		body = DummyNode
-	}
-	_1 := &SwitchStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSwitchStmt, start, end),
-		init:     init,
-		tag:      tag,
-		body:     body,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type SwitchStmtNode struct {
-	*BaseNode
-	init Node
-	tag  Node
-	body Node
-}
-
-func (n *SwitchStmtNode) Init() Node {
-	return n.init
-}
-
-func (n *SwitchStmtNode) SetInit(v Node) {
-	n.init = v
-}
-
-func (n *SwitchStmtNode) Tag() Node {
-	return n.tag
-}
-
-func (n *SwitchStmtNode) SetTag(v Node) {
-	n.tag = v
-}
-
-func (n *SwitchStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *SwitchStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *SwitchStmtNode) BuildLink() {
-	if !n.Init().IsDummy() {
-		init := n.Init()
-		init.BuildLink()
-		init.SetParent(n)
-		init.SetSelfField("init")
-		init.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SwitchStmtNode).SetInit(n)
-		})
-	}
-	if !n.Tag().IsDummy() {
-		tag := n.Tag()
-		tag.BuildLink()
-		tag.SetParent(n)
-		tag.SetSelfField("tag")
-		tag.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SwitchStmtNode).SetTag(n)
-		})
-	}
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SwitchStmtNode).SetBody(n)
-		})
-	}
-}
-
-func (n *SwitchStmtNode) Fields() []string {
-	return []string{
-		"init",
-		"tag",
-		"body",
-	}
-}
-
-func (n *SwitchStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "init" {
-		return n.Init()
-	}
-	if field == "tag" {
-		return n.Tag()
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	return nil
-}
-
-func (n *SwitchStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 3 {
-		return
-	}
-	n.SetInit(nodes[0])
-	n.SetTag(nodes[1])
-	n.SetBody(nodes[2])
-}
-
-func (n *SwitchStmtNode) Fork() Node {
-	_ret := &SwitchStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		init:     n.init.Fork(),
-		tag:      n.tag.Fork(),
-		body:     n.body.Fork(),
-	}
-	_ret.init.SetParent(_ret)
-	_ret.tag.SetParent(_ret)
-	_ret.body.SetParent(_ret)
-	return _ret
-}
-
-func (n *SwitchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.init.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.tag.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *SwitchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"switch_stmt\""
-	ret["init"] = DumpNode(n.Init(), hook)
-	ret["tag"] = DumpNode(n.Tag(), hook)
-	ret["body"] = DumpNode(n.Body(), hook)
-	return ret
-}
-
-func NewTypeSwitchStmtNode(filePath string, fileContent []rune, init Node, assign Node, body Node, start, end Position) Node {
-	if init == nil {
-		init = DummyNode
-	}
-	if assign == nil {
-		assign = DummyNode
-	}
-	if body == nil {
-		body = DummyNode
-	}
-	_1 := &TypeSwitchStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeSwitchStmt, start, end),
-		init:     init,
-		assign:   assign,
-		body:     body,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type TypeSwitchStmtNode struct {
-	*BaseNode
-	init   Node
-	assign Node
-	body   Node
-}
-
-func (n *TypeSwitchStmtNode) Init() Node {
-	return n.init
-}
-
-func (n *TypeSwitchStmtNode) SetInit(v Node) {
-	n.init = v
-}
-
-func (n *TypeSwitchStmtNode) Assign() Node {
-	return n.assign
-}
-
-func (n *TypeSwitchStmtNode) SetAssign(v Node) {
-	n.assign = v
-}
-
-func (n *TypeSwitchStmtNode) Body() Node {
-	return n.body
-}
-
-func (n *TypeSwitchStmtNode) SetBody(v Node) {
-	n.body = v
-}
-
-func (n *TypeSwitchStmtNode) BuildLink() {
-	if !n.Init().IsDummy() {
-		init := n.Init()
-		init.BuildLink()
-		init.SetParent(n)
-		init.SetSelfField("init")
-		init.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeSwitchStmtNode).SetInit(n)
-		})
-	}
-	if !n.Assign().IsDummy() {
-		assign := n.Assign()
-		assign.BuildLink()
-		assign.SetParent(n)
-		assign.SetSelfField("assign")
-		assign.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeSwitchStmtNode).SetAssign(n)
-		})
-	}
-	if !n.Body().IsDummy() {
-		body := n.Body()
-		body.BuildLink()
-		body.SetParent(n)
-		body.SetSelfField("body")
-		body.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeSwitchStmtNode).SetBody(n)
-		})
-	}
-}
-
-func (n *TypeSwitchStmtNode) Fields() []string {
-	return []string{
-		"init",
-		"assign",
-		"body",
-	}
-}
-
-func (n *TypeSwitchStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "init" {
-		return n.Init()
-	}
-	if field == "assign" {
-		return n.Assign()
-	}
-	if field == "body" {
-		return n.Body()
-	}
-	return nil
-}
-
-func (n *TypeSwitchStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 3 {
-		return
-	}
-	n.SetInit(nodes[0])
-	n.SetAssign(nodes[1])
-	n.SetBody(nodes[2])
-}
-
-func (n *TypeSwitchStmtNode) Fork() Node {
-	_ret := &TypeSwitchStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		init:     n.init.Fork(),
-		assign:   n.assign.Fork(),
-		body:     n.body.Fork(),
-	}
-	_ret.init.SetParent(_ret)
-	_ret.assign.SetParent(_ret)
-	_ret.body.SetParent(_ret)
-	return _ret
-}
-
-func (n *TypeSwitchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.init.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.assign.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.body.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *TypeSwitchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"type_switch_stmt\""
-	ret["init"] = DumpNode(n.Init(), hook)
-	ret["assign"] = DumpNode(n.Assign(), hook)
-	ret["body"] = DumpNode(n.Body(), hook)
-	return ret
-}
-
-func NewReturnStmtNode(filePath string, fileContent []rune, results Node, start, end Position) Node {
-	if results == nil {
-		results = DummyNode
-	}
-	_1 := &ReturnStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeReturnStmt, start, end),
-		results:  results,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type ReturnStmtNode struct {
-	*BaseNode
-	results Node
-}
-
-func (n *ReturnStmtNode) Results() Node {
-	return n.results
-}
-
-func (n *ReturnStmtNode) SetResults(v Node) {
-	n.results = v
-}
-
-func (n *ReturnStmtNode) BuildLink() {
-	if !n.Results().IsDummy() {
-		results := n.Results()
-		results.BuildLink()
-		results.SetParent(n)
-		results.SetSelfField("results")
-		results.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ReturnStmtNode).SetResults(n)
-		})
-	}
-}
-
-func (n *ReturnStmtNode) Fields() []string {
-	return []string{
-		"results",
-	}
-}
-
-func (n *ReturnStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "results" {
-		return n.Results()
-	}
-	return nil
-}
-
-func (n *ReturnStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetResults(nodes[0])
-}
-
-func (n *ReturnStmtNode) Fork() Node {
-	_ret := &ReturnStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		results:  n.results.Fork(),
-	}
-	_ret.results.SetParent(_ret)
-	return _ret
-}
-
-func (n *ReturnStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.results.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *ReturnStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"return_stmt\""
-	ret["results"] = DumpNode(n.Results(), hook)
-	return ret
-}
-
-func NewBinaryExprNode(filePath string, fileContent []rune, x Node, y Node, op Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if y == nil {
-		y = DummyNode
-	}
-	if op == nil {
-		op = DummyNode
-	}
-	_1 := &BinaryExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBinaryExpr, start, end),
-		x:        x,
-		y:        y,
-		op:       op,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type BinaryExprNode struct {
-	*BaseNode
-	x  Node
-	y  Node
-	op Node
-}
-
-func (n *BinaryExprNode) X() Node {
-	return n.x
-}
-
-func (n *BinaryExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *BinaryExprNode) Y() Node {
-	return n.y
-}
-
-func (n *BinaryExprNode) SetY(v Node) {
-	n.y = v
-}
-
-func (n *BinaryExprNode) Op() Node {
-	return n.op
-}
-
-func (n *BinaryExprNode) SetOp(v Node) {
-	n.op = v
-}
-
-func (n *BinaryExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BinaryExprNode).SetX(n)
-		})
-	}
-	if !n.Y().IsDummy() {
-		y := n.Y()
-		y.BuildLink()
-		y.SetParent(n)
-		y.SetSelfField("y")
-		y.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BinaryExprNode).SetY(n)
-		})
-	}
-	if !n.Op().IsDummy() {
-		op := n.Op()
-		op.BuildLink()
-		op.SetParent(n)
-		op.SetSelfField("op")
-		op.SetReplaceSelf(func(n Node) {
-			n.Parent().(*BinaryExprNode).SetOp(n)
-		})
-	}
-}
-
-func (n *BinaryExprNode) Fields() []string {
-	return []string{
-		"x",
-		"y",
-		"op",
-	}
-}
-
-func (n *BinaryExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "y" {
-		return n.Y()
-	}
-	if field == "op" {
-		return n.Op()
-	}
-	return nil
-}
-
-func (n *BinaryExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 3 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetY(nodes[1])
-	n.SetOp(nodes[2])
-}
-
-func (n *BinaryExprNode) Fork() Node {
-	_ret := &BinaryExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		y:        n.y.Fork(),
-		op:       n.op.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.y.SetParent(_ret)
-	_ret.op.SetParent(_ret)
-	return _ret
-}
-
-func (n *BinaryExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.y.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.op.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *BinaryExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"binary_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["y"] = DumpNode(n.Y(), hook)
-	ret["op"] = DumpNode(n.Op(), hook)
-	return ret
-}
-
-func NewCallExprNode(filePath string, fileContent []rune, fun Node, typeArgs Node, args Node, start, end Position) Node {
-	if fun == nil {
-		fun = DummyNode
-	}
-	if typeArgs == nil {
-		typeArgs = DummyNode
-	}
-	if args == nil {
-		args = DummyNode
-	}
-	_1 := &CallExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeCallExpr, start, end),
-		fun:      fun,
-		typeArgs: typeArgs,
-		args:     args,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type CallExprNode struct {
-	*BaseNode
-	fun      Node
-	typeArgs Node
-	args     Node
-}
-
-func (n *CallExprNode) Fun() Node {
-	return n.fun
-}
-
-func (n *CallExprNode) SetFun(v Node) {
-	n.fun = v
-}
-
-func (n *CallExprNode) TypeArgs() Node {
-	return n.typeArgs
-}
-
-func (n *CallExprNode) SetTypeArgs(v Node) {
-	n.typeArgs = v
-}
-
-func (n *CallExprNode) Args() Node {
-	return n.args
-}
-
-func (n *CallExprNode) SetArgs(v Node) {
-	n.args = v
-}
-
-func (n *CallExprNode) BuildLink() {
-	if !n.Fun().IsDummy() {
-		fun := n.Fun()
-		fun.BuildLink()
-		fun.SetParent(n)
-		fun.SetSelfField("fun")
-		fun.SetReplaceSelf(func(n Node) {
-			n.Parent().(*CallExprNode).SetFun(n)
-		})
-	}
-	if !n.TypeArgs().IsDummy() {
-		typeArgs := n.TypeArgs()
-		typeArgs.BuildLink()
-		typeArgs.SetParent(n)
-		typeArgs.SetSelfField("type_args")
-		typeArgs.SetReplaceSelf(func(n Node) {
-			n.Parent().(*CallExprNode).SetTypeArgs(n)
-		})
-	}
-	if !n.Args().IsDummy() {
-		args := n.Args()
-		args.BuildLink()
-		args.SetParent(n)
-		args.SetSelfField("args")
-		args.SetReplaceSelf(func(n Node) {
-			n.Parent().(*CallExprNode).SetArgs(n)
-		})
-	}
-}
-
-func (n *CallExprNode) Fields() []string {
-	return []string{
-		"fun",
-		"type_args",
-		"args",
-	}
-}
-
-func (n *CallExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "fun" {
-		return n.Fun()
-	}
-	if field == "type_args" {
-		return n.TypeArgs()
-	}
-	if field == "args" {
-		return n.Args()
-	}
-	return nil
-}
-
-func (n *CallExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 3 {
-		return
-	}
-	n.SetFun(nodes[0])
-	n.SetTypeArgs(nodes[1])
-	n.SetArgs(nodes[2])
-}
-
-func (n *CallExprNode) Fork() Node {
-	_ret := &CallExprNode{
-		BaseNode: n.BaseNode.fork(),
-		fun:      n.fun.Fork(),
-		typeArgs: n.typeArgs.Fork(),
-		args:     n.args.Fork(),
-	}
-	_ret.fun.SetParent(_ret)
-	_ret.typeArgs.SetParent(_ret)
-	_ret.args.SetParent(_ret)
-	return _ret
-}
-
-func (n *CallExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.fun.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.typeArgs.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.args.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *CallExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"call_expr\""
-	ret["fun"] = DumpNode(n.Fun(), hook)
-	ret["type_args"] = DumpNode(n.TypeArgs(), hook)
-	ret["args"] = DumpNode(n.Args(), hook)
-	return ret
-}
-
-func NewIndexExprNode(filePath string, fileContent []rune, x Node, index Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if index == nil {
-		index = DummyNode
-	}
-	_1 := &IndexExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIndexExpr, start, end),
-		x:        x,
-		index:    index,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type IndexExprNode struct {
-	*BaseNode
-	x     Node
-	index Node
-}
-
-func (n *IndexExprNode) X() Node {
-	return n.x
-}
-
-func (n *IndexExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *IndexExprNode) Index() Node {
-	return n.index
-}
-
-func (n *IndexExprNode) SetIndex(v Node) {
-	n.index = v
-}
-
-func (n *IndexExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IndexExprNode).SetX(n)
-		})
-	}
-	if !n.Index().IsDummy() {
-		index := n.Index()
-		index.BuildLink()
-		index.SetParent(n)
-		index.SetSelfField("index")
-		index.SetReplaceSelf(func(n Node) {
-			n.Parent().(*IndexExprNode).SetIndex(n)
-		})
-	}
-}
-
-func (n *IndexExprNode) Fields() []string {
-	return []string{
-		"x",
-		"index",
-	}
-}
-
-func (n *IndexExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "index" {
-		return n.Index()
-	}
-	return nil
-}
-
-func (n *IndexExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetIndex(nodes[1])
-}
-
-func (n *IndexExprNode) Fork() Node {
-	_ret := &IndexExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		index:    n.index.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.index.SetParent(_ret)
-	return _ret
-}
-
-func (n *IndexExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.index.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *IndexExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"index_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["index"] = DumpNode(n.Index(), hook)
-	return ret
-}
-
-func NewKeyValueExprNode(filePath string, fileContent []rune, key Node, value Node, start, end Position) Node {
-	if key == nil {
-		key = DummyNode
-	}
-	if value == nil {
-		value = DummyNode
-	}
-	_1 := &KeyValueExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeKeyValueExpr, start, end),
-		key:      key,
-		value:    value,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type KeyValueExprNode struct {
-	*BaseNode
-	key   Node
-	value Node
-}
-
-func (n *KeyValueExprNode) Key() Node {
-	return n.key
-}
-
-func (n *KeyValueExprNode) SetKey(v Node) {
-	n.key = v
-}
-
-func (n *KeyValueExprNode) Value() Node {
-	return n.value
-}
-
-func (n *KeyValueExprNode) SetValue(v Node) {
-	n.value = v
-}
-
-func (n *KeyValueExprNode) BuildLink() {
-	if !n.Key().IsDummy() {
-		key := n.Key()
-		key.BuildLink()
-		key.SetParent(n)
-		key.SetSelfField("key")
-		key.SetReplaceSelf(func(n Node) {
-			n.Parent().(*KeyValueExprNode).SetKey(n)
-		})
-	}
-	if !n.Value().IsDummy() {
-		value := n.Value()
-		value.BuildLink()
-		value.SetParent(n)
-		value.SetSelfField("value")
-		value.SetReplaceSelf(func(n Node) {
-			n.Parent().(*KeyValueExprNode).SetValue(n)
-		})
-	}
-}
-
-func (n *KeyValueExprNode) Fields() []string {
-	return []string{
-		"key",
-		"value",
-	}
-}
-
-func (n *KeyValueExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "key" {
-		return n.Key()
-	}
-	if field == "value" {
-		return n.Value()
-	}
-	return nil
-}
-
-func (n *KeyValueExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetKey(nodes[0])
-	n.SetValue(nodes[1])
-}
-
-func (n *KeyValueExprNode) Fork() Node {
-	_ret := &KeyValueExprNode{
-		BaseNode: n.BaseNode.fork(),
-		key:      n.key.Fork(),
-		value:    n.value.Fork(),
-	}
-	_ret.key.SetParent(_ret)
-	_ret.value.SetParent(_ret)
-	return _ret
-}
-
-func (n *KeyValueExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.key.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.value.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *KeyValueExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"key_value_expr\""
-	ret["key"] = DumpNode(n.Key(), hook)
-	ret["value"] = DumpNode(n.Value(), hook)
-	return ret
-}
-
-func NewParenExprNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	_1 := &ParenExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeParenExpr, start, end),
-		x:        x,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type ParenExprNode struct {
-	*BaseNode
-	x Node
-}
-
-func (n *ParenExprNode) X() Node {
-	return n.x
-}
-
-func (n *ParenExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *ParenExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ParenExprNode).SetX(n)
-		})
-	}
-}
-
-func (n *ParenExprNode) Fields() []string {
-	return []string{
-		"x",
-	}
-}
-
-func (n *ParenExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	return nil
-}
-
-func (n *ParenExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetX(nodes[0])
-}
-
-func (n *ParenExprNode) Fork() Node {
-	_ret := &ParenExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	return _ret
-}
-
-func (n *ParenExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *ParenExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"paren_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	return ret
-}
-
-func NewSelectorExprNode(filePath string, fileContent []rune, x Node, sel Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if sel == nil {
-		sel = DummyNode
-	}
-	_1 := &SelectorExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSelectorExpr, start, end),
-		x:        x,
-		sel:      sel,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type SelectorExprNode struct {
-	*BaseNode
-	x   Node
-	sel Node
-}
-
-func (n *SelectorExprNode) X() Node {
-	return n.x
-}
-
-func (n *SelectorExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *SelectorExprNode) Sel() Node {
-	return n.sel
-}
-
-func (n *SelectorExprNode) SetSel(v Node) {
-	n.sel = v
-}
-
-func (n *SelectorExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SelectorExprNode).SetX(n)
-		})
-	}
-	if !n.Sel().IsDummy() {
-		sel := n.Sel()
-		sel.BuildLink()
-		sel.SetParent(n)
-		sel.SetSelfField("sel")
-		sel.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SelectorExprNode).SetSel(n)
-		})
-	}
-}
-
-func (n *SelectorExprNode) Fields() []string {
-	return []string{
-		"x",
-		"sel",
-	}
-}
-
-func (n *SelectorExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "sel" {
-		return n.Sel()
-	}
-	return nil
-}
-
-func (n *SelectorExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetSel(nodes[1])
-}
-
-func (n *SelectorExprNode) Fork() Node {
-	_ret := &SelectorExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		sel:      n.sel.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.sel.SetParent(_ret)
-	return _ret
-}
-
-func (n *SelectorExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.sel.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *SelectorExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"selector_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["sel"] = DumpNode(n.Sel(), hook)
-	return ret
-}
-
-func NewStarExprNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	_1 := &StarExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeStarExpr, start, end),
-		x:        x,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type StarExprNode struct {
-	*BaseNode
-	x Node
-}
-
-func (n *StarExprNode) X() Node {
-	return n.x
-}
-
-func (n *StarExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *StarExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*StarExprNode).SetX(n)
-		})
-	}
-}
-
-func (n *StarExprNode) Fields() []string {
-	return []string{
-		"x",
-	}
-}
-
-func (n *StarExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	return nil
-}
-
-func (n *StarExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 1 {
-		return
-	}
-	n.SetX(nodes[0])
-}
-
-func (n *StarExprNode) Fork() Node {
-	_ret := &StarExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	return _ret
-}
-
-func (n *StarExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *StarExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"star_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	return ret
-}
-
-func NewTypeAssertExprNode(filePath string, fileContent []rune, x Node, type_ Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if type_ == nil {
-		type_ = DummyNode
-	}
-	_1 := &TypeAssertExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeAssertExpr, start, end),
-		x:        x,
-		type_:    type_,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type TypeAssertExprNode struct {
-	*BaseNode
-	x     Node
-	type_ Node
-}
-
-func (n *TypeAssertExprNode) X() Node {
-	return n.x
-}
-
-func (n *TypeAssertExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *TypeAssertExprNode) Type() Node {
-	return n.type_
-}
-
-func (n *TypeAssertExprNode) SetType(v Node) {
-	n.type_ = v
-}
-
-func (n *TypeAssertExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeAssertExprNode).SetX(n)
-		})
-	}
-	if !n.Type().IsDummy() {
-		type_ := n.Type()
-		type_.BuildLink()
-		type_.SetParent(n)
-		type_.SetSelfField("type_")
-		type_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*TypeAssertExprNode).SetType(n)
-		})
-	}
-}
-
-func (n *TypeAssertExprNode) Fields() []string {
-	return []string{
-		"x",
-		"type_",
-	}
-}
-
-func (n *TypeAssertExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "type_" {
-		return n.Type()
-	}
-	return nil
-}
-
-func (n *TypeAssertExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetType(nodes[1])
-}
-
-func (n *TypeAssertExprNode) Fork() Node {
-	_ret := &TypeAssertExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		type_:    n.type_.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.type_.SetParent(_ret)
-	return _ret
-}
-
-func (n *TypeAssertExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.type_.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *TypeAssertExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"type_assert_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["type"] = DumpNode(n.Type(), hook)
-	return ret
-}
-
-func NewSliceExprNode(filePath string, fileContent []rune, x Node, low Node, high Node, max_ Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
-	}
-	if low == nil {
-		low = DummyNode
-	}
-	if high == nil {
-		high = DummyNode
-	}
-	if max_ == nil {
-		max_ = DummyNode
-	}
-	_1 := &SliceExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSliceExpr, start, end),
-		x:        x,
-		low:      low,
-		high:     high,
-		max_:     max_,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type SliceExprNode struct {
-	*BaseNode
-	x    Node
-	low  Node
-	high Node
-	max_ Node
-}
-
-func (n *SliceExprNode) X() Node {
-	return n.x
-}
-
-func (n *SliceExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *SliceExprNode) Low() Node {
-	return n.low
-}
-
-func (n *SliceExprNode) SetLow(v Node) {
-	n.low = v
-}
-
-func (n *SliceExprNode) High() Node {
-	return n.high
-}
-
-func (n *SliceExprNode) SetHigh(v Node) {
-	n.high = v
-}
-
-func (n *SliceExprNode) Max() Node {
-	return n.max_
-}
-
-func (n *SliceExprNode) SetMax(v Node) {
-	n.max_ = v
-}
-
-func (n *SliceExprNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SliceExprNode).SetX(n)
-		})
-	}
-	if !n.Low().IsDummy() {
-		low := n.Low()
-		low.BuildLink()
-		low.SetParent(n)
-		low.SetSelfField("low")
-		low.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SliceExprNode).SetLow(n)
-		})
-	}
-	if !n.High().IsDummy() {
-		high := n.High()
-		high.BuildLink()
-		high.SetParent(n)
-		high.SetSelfField("high")
-		high.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SliceExprNode).SetHigh(n)
-		})
-	}
-	if !n.Max().IsDummy() {
-		max_ := n.Max()
-		max_.BuildLink()
-		max_.SetParent(n)
-		max_.SetSelfField("max_")
-		max_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*SliceExprNode).SetMax(n)
-		})
-	}
-}
-
-func (n *SliceExprNode) Fields() []string {
-	return []string{
-		"x",
-		"low",
-		"high",
-		"max_",
-	}
-}
-
-func (n *SliceExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "x" {
-		return n.X()
-	}
-	if field == "low" {
-		return n.Low()
-	}
-	if field == "high" {
-		return n.High()
-	}
-	if field == "max_" {
-		return n.Max()
-	}
-	return nil
-}
-
-func (n *SliceExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 4 {
-		return
-	}
-	n.SetX(nodes[0])
-	n.SetLow(nodes[1])
-	n.SetHigh(nodes[2])
-	n.SetMax(nodes[3])
-}
-
-func (n *SliceExprNode) Fork() Node {
-	_ret := &SliceExprNode{
-		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
-		low:      n.low.Fork(),
-		high:     n.high.Fork(),
-		max_:     n.max_.Fork(),
-	}
-	_ret.x.SetParent(_ret)
-	_ret.low.SetParent(_ret)
-	_ret.high.SetParent(_ret)
-	_ret.max_.SetParent(_ret)
-	return _ret
-}
-
-func (n *SliceExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.low.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.high.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.max_.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *SliceExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"slice_expr\""
-	ret["x"] = DumpNode(n.X(), hook)
-	ret["low"] = DumpNode(n.Low(), hook)
-	ret["high"] = DumpNode(n.High(), hook)
-	ret["max"] = DumpNode(n.Max(), hook)
-	return ret
-}
-
-func NewUnaryExprNode(filePath string, fileContent []rune, op Node, x Node, start, end Position) Node {
-	if op == nil {
-		op = DummyNode
-	}
-	if x == nil {
-		x = DummyNode
-	}
-	_1 := &UnaryExprNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeUnaryExpr, start, end),
-		op:       op,
-		x:        x,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type UnaryExprNode struct {
-	*BaseNode
-	op Node
-	x  Node
-}
-
-func (n *UnaryExprNode) Op() Node {
-	return n.op
-}
-
-func (n *UnaryExprNode) SetOp(v Node) {
-	n.op = v
-}
-
-func (n *UnaryExprNode) X() Node {
-	return n.x
-}
-
-func (n *UnaryExprNode) SetX(v Node) {
-	n.x = v
-}
-
-func (n *UnaryExprNode) BuildLink() {
-	if !n.Op().IsDummy() {
-		op := n.Op()
-		op.BuildLink()
-		op.SetParent(n)
-		op.SetSelfField("op")
-		op.SetReplaceSelf(func(n Node) {
-			n.Parent().(*UnaryExprNode).SetOp(n)
-		})
-	}
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*UnaryExprNode).SetX(n)
-		})
-	}
-}
-
-func (n *UnaryExprNode) Fields() []string {
-	return []string{
-		"op",
-		"x",
-	}
-}
-
-func (n *UnaryExprNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "op" {
-		return n.Op()
-	}
-	if field == "x" {
-		return n.X()
-	}
-	return nil
-}
-
-func (n *UnaryExprNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetOp(nodes[0])
-	n.SetX(nodes[1])
-}
-
-func (n *UnaryExprNode) Fork() Node {
-	_ret := &UnaryExprNode{
-		BaseNode: n.BaseNode.fork(),
-		op:       n.op.Fork(),
-		x:        n.x.Fork(),
-	}
-	_ret.op.SetParent(_ret)
-	_ret.x.SetParent(_ret)
-	return _ret
-}
-
-func (n *UnaryExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.op.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.x.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *UnaryExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"unary_expr\""
-	ret["op"] = DumpNode(n.Op(), hook)
-	ret["x"] = DumpNode(n.X(), hook)
 	return ret
 }
 
@@ -4918,13 +1573,13 @@ func (n *MapTypeNode) Dump(hook func(Node, map[string]string) string) map[string
 	return ret
 }
 
-func NewStructTypeNode(filePath string, fileContent []rune, fields Node, start, end Position) Node {
-	if fields == nil {
-		fields = DummyNode
+func NewStructTypeNode(filePath string, fileContent []rune, fieldDecls Node, start, end Position) Node {
+	if fieldDecls == nil {
+		fieldDecls = DummyNode
 	}
 	_1 := &StructTypeNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeStructType, start, end),
-		fields:   fields,
+		BaseNode:   NewBaseNode(filePath, fileContent, NodeTypeStructType, start, end),
+		fieldDecls: fieldDecls,
 	}
 	creationHook(_1)
 	return _1
@@ -4932,32 +1587,32 @@ func NewStructTypeNode(filePath string, fileContent []rune, fields Node, start, 
 
 type StructTypeNode struct {
 	*BaseNode
-	fields Node
+	fieldDecls Node
 }
 
-func (n *StructTypeNode) Fields() Node {
-	return n.fields
+func (n *StructTypeNode) FieldDecls() Node {
+	return n.fieldDecls
 }
 
-func (n *StructTypeNode) SetFields(v Node) {
-	n.fields = v
+func (n *StructTypeNode) SetFieldDecls(v Node) {
+	n.fieldDecls = v
 }
 
 func (n *StructTypeNode) BuildLink() {
-	if !n.Fields().IsDummy() {
-		fields := n.Fields()
-		fields.BuildLink()
-		fields.SetParent(n)
-		fields.SetSelfField("fields")
-		fields.SetReplaceSelf(func(n Node) {
-			n.Parent().(*StructTypeNode).SetFields(n)
+	if !n.FieldDecls().IsDummy() {
+		fieldDecls := n.FieldDecls()
+		fieldDecls.BuildLink()
+		fieldDecls.SetParent(n)
+		fieldDecls.SetSelfField("field_decls")
+		fieldDecls.SetReplaceSelf(func(n Node) {
+			n.Parent().(*StructTypeNode).SetFieldDecls(n)
 		})
 	}
 }
 
 func (n *StructTypeNode) Fields() []string {
 	return []string{
-		"fields",
+		"field_decls",
 	}
 }
 
@@ -4965,8 +1620,8 @@ func (n *StructTypeNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "fields" {
-		return n.Fields()
+	if field == "field_decls" {
+		return n.FieldDecls()
 	}
 	return nil
 }
@@ -4975,15 +1630,15 @@ func (n *StructTypeNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetFields(nodes[0])
+	n.SetFieldDecls(nodes[0])
 }
 
 func (n *StructTypeNode) Fork() Node {
 	_ret := &StructTypeNode{
-		BaseNode: n.BaseNode.fork(),
-		fields:   n.fields.Fork(),
+		BaseNode:   n.BaseNode.fork(),
+		fieldDecls: n.fieldDecls.Fork(),
 	}
-	_ret.fields.SetParent(_ret)
+	_ret.fieldDecls.SetParent(_ret)
 	return _ret
 }
 
@@ -4995,7 +1650,7 @@ func (n *StructTypeNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 	if !vc {
 		return false
 	}
-	if n.fields.Visit(beforeChildren, afterChildren) {
+	if n.fieldDecls.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -5007,7 +1662,100 @@ func (n *StructTypeNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 func (n *StructTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"struct_type\""
-	ret["fields"] = DumpNode(n.Fields(), hook)
+	ret["field_decls"] = DumpNode(n.FieldDecls(), hook)
+	return ret
+}
+
+func NewParenTypeNode(filePath string, fileContent []rune, type_ Node, start, end Position) Node {
+	if type_ == nil {
+		type_ = DummyNode
+	}
+	_1 := &ParenTypeNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeParenType, start, end),
+		type_:    type_,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ParenTypeNode struct {
+	*BaseNode
+	type_ Node
+}
+
+func (n *ParenTypeNode) Type() Node {
+	return n.type_
+}
+
+func (n *ParenTypeNode) SetType(v Node) {
+	n.type_ = v
+}
+
+func (n *ParenTypeNode) BuildLink() {
+	if !n.Type().IsDummy() {
+		type_ := n.Type()
+		type_.BuildLink()
+		type_.SetParent(n)
+		type_.SetSelfField("type_")
+		type_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ParenTypeNode).SetType(n)
+		})
+	}
+}
+
+func (n *ParenTypeNode) Fields() []string {
+	return []string{
+		"type_",
+	}
+}
+
+func (n *ParenTypeNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "type_" {
+		return n.Type()
+	}
+	return nil
+}
+
+func (n *ParenTypeNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetType(nodes[0])
+}
+
+func (n *ParenTypeNode) Fork() Node {
+	_ret := &ParenTypeNode{
+		BaseNode: n.BaseNode.fork(),
+		type_:    n.type_.Fork(),
+	}
+	_ret.type_.SetParent(_ret)
+	return _ret
+}
+
+func (n *ParenTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.type_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ParenTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"paren_type\""
+	ret["type"] = DumpNode(n.Type(), hook)
 	return ret
 }
 
@@ -5230,17 +1978,21 @@ func (n *CompositeLitNode) Dump(hook func(Node, map[string]string) string) map[s
 	return ret
 }
 
-func NewFuncLitNode(filePath string, fileContent []rune, type_ Node, body Node, start, end Position) Node {
-	if type_ == nil {
-		type_ = DummyNode
+func NewFuncLitNode(filePath string, fileContent []rune, parameters Node, results Node, body Node, start, end Position) Node {
+	if parameters == nil {
+		parameters = DummyNode
+	}
+	if results == nil {
+		results = DummyNode
 	}
 	if body == nil {
 		body = DummyNode
 	}
 	_1 := &FuncLitNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeFuncLit, start, end),
-		type_:    type_,
-		body:     body,
+		BaseNode:   NewBaseNode(filePath, fileContent, NodeTypeFuncLit, start, end),
+		parameters: parameters,
+		results:    results,
+		body:       body,
 	}
 	creationHook(_1)
 	return _1
@@ -5248,16 +2000,25 @@ func NewFuncLitNode(filePath string, fileContent []rune, type_ Node, body Node, 
 
 type FuncLitNode struct {
 	*BaseNode
-	type_ Node
-	body  Node
+	parameters Node
+	results    Node
+	body       Node
 }
 
-func (n *FuncLitNode) Type() Node {
-	return n.type_
+func (n *FuncLitNode) Parameters() Node {
+	return n.parameters
 }
 
-func (n *FuncLitNode) SetType(v Node) {
-	n.type_ = v
+func (n *FuncLitNode) SetParameters(v Node) {
+	n.parameters = v
+}
+
+func (n *FuncLitNode) Results() Node {
+	return n.results
+}
+
+func (n *FuncLitNode) SetResults(v Node) {
+	n.results = v
 }
 
 func (n *FuncLitNode) Body() Node {
@@ -5269,13 +2030,22 @@ func (n *FuncLitNode) SetBody(v Node) {
 }
 
 func (n *FuncLitNode) BuildLink() {
-	if !n.Type().IsDummy() {
-		type_ := n.Type()
-		type_.BuildLink()
-		type_.SetParent(n)
-		type_.SetSelfField("type_")
-		type_.SetReplaceSelf(func(n Node) {
-			n.Parent().(*FuncLitNode).SetType(n)
+	if !n.Parameters().IsDummy() {
+		parameters := n.Parameters()
+		parameters.BuildLink()
+		parameters.SetParent(n)
+		parameters.SetSelfField("parameters")
+		parameters.SetReplaceSelf(func(n Node) {
+			n.Parent().(*FuncLitNode).SetParameters(n)
+		})
+	}
+	if !n.Results().IsDummy() {
+		results := n.Results()
+		results.BuildLink()
+		results.SetParent(n)
+		results.SetSelfField("results")
+		results.SetReplaceSelf(func(n Node) {
+			n.Parent().(*FuncLitNode).SetResults(n)
 		})
 	}
 	if !n.Body().IsDummy() {
@@ -5291,7 +2061,8 @@ func (n *FuncLitNode) BuildLink() {
 
 func (n *FuncLitNode) Fields() []string {
 	return []string{
-		"type_",
+		"parameters",
+		"results",
 		"body",
 	}
 }
@@ -5300,8 +2071,11 @@ func (n *FuncLitNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "type_" {
-		return n.Type()
+	if field == "parameters" {
+		return n.Parameters()
+	}
+	if field == "results" {
+		return n.Results()
 	}
 	if field == "body" {
 		return n.Body()
@@ -5310,20 +2084,23 @@ func (n *FuncLitNode) Child(field string) Node {
 }
 
 func (n *FuncLitNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
+	if len(nodes) != 3 {
 		return
 	}
-	n.SetType(nodes[0])
-	n.SetBody(nodes[1])
+	n.SetParameters(nodes[0])
+	n.SetResults(nodes[1])
+	n.SetBody(nodes[2])
 }
 
 func (n *FuncLitNode) Fork() Node {
 	_ret := &FuncLitNode{
-		BaseNode: n.BaseNode.fork(),
-		type_:    n.type_.Fork(),
-		body:     n.body.Fork(),
+		BaseNode:   n.BaseNode.fork(),
+		parameters: n.parameters.Fork(),
+		results:    n.results.Fork(),
+		body:       n.body.Fork(),
 	}
-	_ret.type_.SetParent(_ret)
+	_ret.parameters.SetParent(_ret)
+	_ret.results.SetParent(_ret)
 	_ret.body.SetParent(_ret)
 	return _ret
 }
@@ -5336,7 +2113,10 @@ func (n *FuncLitNode) Visit(beforeChildren func(node Node) (visitChildren, exit 
 	if !vc {
 		return false
 	}
-	if n.type_.Visit(beforeChildren, afterChildren) {
+	if n.parameters.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.results.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if n.body.Visit(beforeChildren, afterChildren) {
@@ -5351,7 +2131,8 @@ func (n *FuncLitNode) Visit(beforeChildren func(node Node) (visitChildren, exit 
 func (n *FuncLitNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"func_lit\""
-	ret["type"] = DumpNode(n.Type(), hook)
+	ret["parameters"] = DumpNode(n.Parameters(), hook)
+	ret["results"] = DumpNode(n.Results(), hook)
 	ret["body"] = DumpNode(n.Body(), hook)
 	return ret
 }
@@ -7084,132 +3865,6 @@ func (n *EllipsisNode) Dump(hook func(Node, map[string]string) string) map[strin
 	ret := make(map[string]string)
 	ret["kind"] = "\"ellipsis\""
 	ret["elt"] = DumpNode(n.Elt(), hook)
-	return ret
-}
-
-func NewLabeledStmtNode(filePath string, fileContent []rune, label Node, stmt Node, start, end Position) Node {
-	if label == nil {
-		label = DummyNode
-	}
-	if stmt == nil {
-		stmt = DummyNode
-	}
-	_1 := &LabeledStmtNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeLabeledStmt, start, end),
-		label:    label,
-		stmt:     stmt,
-	}
-	creationHook(_1)
-	return _1
-}
-
-type LabeledStmtNode struct {
-	*BaseNode
-	label Node
-	stmt  Node
-}
-
-func (n *LabeledStmtNode) Label() Node {
-	return n.label
-}
-
-func (n *LabeledStmtNode) SetLabel(v Node) {
-	n.label = v
-}
-
-func (n *LabeledStmtNode) Stmt() Node {
-	return n.stmt
-}
-
-func (n *LabeledStmtNode) SetStmt(v Node) {
-	n.stmt = v
-}
-
-func (n *LabeledStmtNode) BuildLink() {
-	if !n.Label().IsDummy() {
-		label := n.Label()
-		label.BuildLink()
-		label.SetParent(n)
-		label.SetSelfField("label")
-		label.SetReplaceSelf(func(n Node) {
-			n.Parent().(*LabeledStmtNode).SetLabel(n)
-		})
-	}
-	if !n.Stmt().IsDummy() {
-		stmt := n.Stmt()
-		stmt.BuildLink()
-		stmt.SetParent(n)
-		stmt.SetSelfField("stmt")
-		stmt.SetReplaceSelf(func(n Node) {
-			n.Parent().(*LabeledStmtNode).SetStmt(n)
-		})
-	}
-}
-
-func (n *LabeledStmtNode) Fields() []string {
-	return []string{
-		"label",
-		"stmt",
-	}
-}
-
-func (n *LabeledStmtNode) Child(field string) Node {
-	if field == "" {
-		return nil
-	}
-	if field == "label" {
-		return n.Label()
-	}
-	if field == "stmt" {
-		return n.Stmt()
-	}
-	return nil
-}
-
-func (n *LabeledStmtNode) SetChild(nodes []Node) {
-	if len(nodes) != 2 {
-		return
-	}
-	n.SetLabel(nodes[0])
-	n.SetStmt(nodes[1])
-}
-
-func (n *LabeledStmtNode) Fork() Node {
-	_ret := &LabeledStmtNode{
-		BaseNode: n.BaseNode.fork(),
-		label:    n.label.Fork(),
-		stmt:     n.stmt.Fork(),
-	}
-	_ret.label.SetParent(_ret)
-	_ret.stmt.SetParent(_ret)
-	return _ret
-}
-
-func (n *LabeledStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
-	vc, e := beforeChildren(n)
-	if e {
-		return true
-	}
-	if !vc {
-		return false
-	}
-	if n.label.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if n.stmt.Visit(beforeChildren, afterChildren) {
-		return true
-	}
-	if afterChildren(n) {
-		return true
-	}
-	return false
-}
-
-func (n *LabeledStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
-	ret := make(map[string]string)
-	ret["kind"] = "\"labeled_stmt\""
-	ret["label"] = DumpNode(n.Label(), hook)
-	ret["stmt"] = DumpNode(n.Stmt(), hook)
 	return ret
 }
 
@@ -10438,6 +7093,3765 @@ func (n *ReceiverNode) Dump(hook func(Node, map[string]string) string) map[strin
 	return ret
 }
 
+func NewMethodFieldNode(filePath string, fileContent []rune, name Node, parameters Node, results Node, start, end Position) Node {
+	if name == nil {
+		name = DummyNode
+	}
+	if parameters == nil {
+		parameters = DummyNode
+	}
+	if results == nil {
+		results = DummyNode
+	}
+	_1 := &MethodFieldNode{
+		BaseNode:   NewBaseNode(filePath, fileContent, NodeTypeMethodField, start, end),
+		name:       name,
+		parameters: parameters,
+		results:    results,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type MethodFieldNode struct {
+	*BaseNode
+	name       Node
+	parameters Node
+	results    Node
+}
+
+func (n *MethodFieldNode) Name() Node {
+	return n.name
+}
+
+func (n *MethodFieldNode) SetName(v Node) {
+	n.name = v
+}
+
+func (n *MethodFieldNode) Parameters() Node {
+	return n.parameters
+}
+
+func (n *MethodFieldNode) SetParameters(v Node) {
+	n.parameters = v
+}
+
+func (n *MethodFieldNode) Results() Node {
+	return n.results
+}
+
+func (n *MethodFieldNode) SetResults(v Node) {
+	n.results = v
+}
+
+func (n *MethodFieldNode) BuildLink() {
+	if !n.Name().IsDummy() {
+		name := n.Name()
+		name.BuildLink()
+		name.SetParent(n)
+		name.SetSelfField("name")
+		name.SetReplaceSelf(func(n Node) {
+			n.Parent().(*MethodFieldNode).SetName(n)
+		})
+	}
+	if !n.Parameters().IsDummy() {
+		parameters := n.Parameters()
+		parameters.BuildLink()
+		parameters.SetParent(n)
+		parameters.SetSelfField("parameters")
+		parameters.SetReplaceSelf(func(n Node) {
+			n.Parent().(*MethodFieldNode).SetParameters(n)
+		})
+	}
+	if !n.Results().IsDummy() {
+		results := n.Results()
+		results.BuildLink()
+		results.SetParent(n)
+		results.SetSelfField("results")
+		results.SetReplaceSelf(func(n Node) {
+			n.Parent().(*MethodFieldNode).SetResults(n)
+		})
+	}
+}
+
+func (n *MethodFieldNode) Fields() []string {
+	return []string{
+		"name",
+		"parameters",
+		"results",
+	}
+}
+
+func (n *MethodFieldNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "name" {
+		return n.Name()
+	}
+	if field == "parameters" {
+		return n.Parameters()
+	}
+	if field == "results" {
+		return n.Results()
+	}
+	return nil
+}
+
+func (n *MethodFieldNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetName(nodes[0])
+	n.SetParameters(nodes[1])
+	n.SetResults(nodes[2])
+}
+
+func (n *MethodFieldNode) Fork() Node {
+	_ret := &MethodFieldNode{
+		BaseNode:   n.BaseNode.fork(),
+		name:       n.name.Fork(),
+		parameters: n.parameters.Fork(),
+		results:    n.results.Fork(),
+	}
+	_ret.name.SetParent(_ret)
+	_ret.parameters.SetParent(_ret)
+	_ret.results.SetParent(_ret)
+	return _ret
+}
+
+func (n *MethodFieldNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.name.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.parameters.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.results.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *MethodFieldNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"method_field\""
+	ret["name"] = DumpNode(n.Name(), hook)
+	ret["parameters"] = DumpNode(n.Parameters(), hook)
+	ret["results"] = DumpNode(n.Results(), hook)
+	return ret
+}
+
+func NewQualifiedTypeIdentNode(filePath string, fileContent []rune, target Node, ident Node, start, end Position) Node {
+	if target == nil {
+		target = DummyNode
+	}
+	if ident == nil {
+		ident = DummyNode
+	}
+	_1 := &QualifiedTypeIdentNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeQualifiedTypeIdent, start, end),
+		target:   target,
+		ident:    ident,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type QualifiedTypeIdentNode struct {
+	*BaseNode
+	target Node
+	ident  Node
+}
+
+func (n *QualifiedTypeIdentNode) Target() Node {
+	return n.target
+}
+
+func (n *QualifiedTypeIdentNode) SetTarget(v Node) {
+	n.target = v
+}
+
+func (n *QualifiedTypeIdentNode) Ident() Node {
+	return n.ident
+}
+
+func (n *QualifiedTypeIdentNode) SetIdent(v Node) {
+	n.ident = v
+}
+
+func (n *QualifiedTypeIdentNode) BuildLink() {
+	if !n.Target().IsDummy() {
+		target := n.Target()
+		target.BuildLink()
+		target.SetParent(n)
+		target.SetSelfField("target")
+		target.SetReplaceSelf(func(n Node) {
+			n.Parent().(*QualifiedTypeIdentNode).SetTarget(n)
+		})
+	}
+	if !n.Ident().IsDummy() {
+		ident := n.Ident()
+		ident.BuildLink()
+		ident.SetParent(n)
+		ident.SetSelfField("ident")
+		ident.SetReplaceSelf(func(n Node) {
+			n.Parent().(*QualifiedTypeIdentNode).SetIdent(n)
+		})
+	}
+}
+
+func (n *QualifiedTypeIdentNode) Fields() []string {
+	return []string{
+		"target",
+		"ident",
+	}
+}
+
+func (n *QualifiedTypeIdentNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "target" {
+		return n.Target()
+	}
+	if field == "ident" {
+		return n.Ident()
+	}
+	return nil
+}
+
+func (n *QualifiedTypeIdentNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetTarget(nodes[0])
+	n.SetIdent(nodes[1])
+}
+
+func (n *QualifiedTypeIdentNode) Fork() Node {
+	_ret := &QualifiedTypeIdentNode{
+		BaseNode: n.BaseNode.fork(),
+		target:   n.target.Fork(),
+		ident:    n.ident.Fork(),
+	}
+	_ret.target.SetParent(_ret)
+	_ret.ident.SetParent(_ret)
+	return _ret
+}
+
+func (n *QualifiedTypeIdentNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.target.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.ident.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *QualifiedTypeIdentNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"qualified_type_ident\""
+	ret["target"] = DumpNode(n.Target(), hook)
+	ret["ident"] = DumpNode(n.Ident(), hook)
+	return ret
+}
+
+func NewAssignStmtNode(filePath string, fileContent []rune, lhs Node, op Node, rhs Node, start, end Position) Node {
+	if lhs == nil {
+		lhs = DummyNode
+	}
+	if op == nil {
+		op = DummyNode
+	}
+	if rhs == nil {
+		rhs = DummyNode
+	}
+	_1 := &AssignStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeAssignStmt, start, end),
+		lhs:      lhs,
+		op:       op,
+		rhs:      rhs,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type AssignStmtNode struct {
+	*BaseNode
+	lhs Node
+	op  Node
+	rhs Node
+}
+
+func (n *AssignStmtNode) Lhs() Node {
+	return n.lhs
+}
+
+func (n *AssignStmtNode) SetLhs(v Node) {
+	n.lhs = v
+}
+
+func (n *AssignStmtNode) Op() Node {
+	return n.op
+}
+
+func (n *AssignStmtNode) SetOp(v Node) {
+	n.op = v
+}
+
+func (n *AssignStmtNode) Rhs() Node {
+	return n.rhs
+}
+
+func (n *AssignStmtNode) SetRhs(v Node) {
+	n.rhs = v
+}
+
+func (n *AssignStmtNode) BuildLink() {
+	if !n.Lhs().IsDummy() {
+		lhs := n.Lhs()
+		lhs.BuildLink()
+		lhs.SetParent(n)
+		lhs.SetSelfField("lhs")
+		lhs.SetReplaceSelf(func(n Node) {
+			n.Parent().(*AssignStmtNode).SetLhs(n)
+		})
+	}
+	if !n.Op().IsDummy() {
+		op := n.Op()
+		op.BuildLink()
+		op.SetParent(n)
+		op.SetSelfField("op")
+		op.SetReplaceSelf(func(n Node) {
+			n.Parent().(*AssignStmtNode).SetOp(n)
+		})
+	}
+	if !n.Rhs().IsDummy() {
+		rhs := n.Rhs()
+		rhs.BuildLink()
+		rhs.SetParent(n)
+		rhs.SetSelfField("rhs")
+		rhs.SetReplaceSelf(func(n Node) {
+			n.Parent().(*AssignStmtNode).SetRhs(n)
+		})
+	}
+}
+
+func (n *AssignStmtNode) Fields() []string {
+	return []string{
+		"lhs",
+		"op",
+		"rhs",
+	}
+}
+
+func (n *AssignStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "lhs" {
+		return n.Lhs()
+	}
+	if field == "op" {
+		return n.Op()
+	}
+	if field == "rhs" {
+		return n.Rhs()
+	}
+	return nil
+}
+
+func (n *AssignStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetLhs(nodes[0])
+	n.SetOp(nodes[1])
+	n.SetRhs(nodes[2])
+}
+
+func (n *AssignStmtNode) Fork() Node {
+	_ret := &AssignStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		lhs:      n.lhs.Fork(),
+		op:       n.op.Fork(),
+		rhs:      n.rhs.Fork(),
+	}
+	_ret.lhs.SetParent(_ret)
+	_ret.op.SetParent(_ret)
+	_ret.rhs.SetParent(_ret)
+	return _ret
+}
+
+func (n *AssignStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.lhs.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.op.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.rhs.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *AssignStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"assign_stmt\""
+	ret["lhs"] = DumpNode(n.Lhs(), hook)
+	ret["op"] = DumpNode(n.Op(), hook)
+	ret["rhs"] = DumpNode(n.Rhs(), hook)
+	return ret
+}
+
+func NewBlockStmtNode(filePath string, fileContent []rune, list Node, start, end Position) Node {
+	if list == nil {
+		list = DummyNode
+	}
+	_1 := &BlockStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBlockStmt, start, end),
+		list:     list,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type BlockStmtNode struct {
+	*BaseNode
+	list Node
+}
+
+func (n *BlockStmtNode) List() Node {
+	return n.list
+}
+
+func (n *BlockStmtNode) SetList(v Node) {
+	n.list = v
+}
+
+func (n *BlockStmtNode) BuildLink() {
+	if !n.List().IsDummy() {
+		list := n.List()
+		list.BuildLink()
+		list.SetParent(n)
+		list.SetSelfField("list")
+		list.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BlockStmtNode).SetList(n)
+		})
+	}
+}
+
+func (n *BlockStmtNode) Fields() []string {
+	return []string{
+		"list",
+	}
+}
+
+func (n *BlockStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "list" {
+		return n.List()
+	}
+	return nil
+}
+
+func (n *BlockStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetList(nodes[0])
+}
+
+func (n *BlockStmtNode) Fork() Node {
+	_ret := &BlockStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		list:     n.list.Fork(),
+	}
+	_ret.list.SetParent(_ret)
+	return _ret
+}
+
+func (n *BlockStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.list.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *BlockStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"block_stmt\""
+	ret["list"] = DumpNode(n.List(), hook)
+	return ret
+}
+
+func NewBranchStmtNode(filePath string, fileContent []rune, tok Node, label Node, start, end Position) Node {
+	if tok == nil {
+		tok = DummyNode
+	}
+	if label == nil {
+		label = DummyNode
+	}
+	_1 := &BranchStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBranchStmt, start, end),
+		tok:      tok,
+		label:    label,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type BranchStmtNode struct {
+	*BaseNode
+	tok   Node
+	label Node
+}
+
+func (n *BranchStmtNode) Tok() Node {
+	return n.tok
+}
+
+func (n *BranchStmtNode) SetTok(v Node) {
+	n.tok = v
+}
+
+func (n *BranchStmtNode) Label() Node {
+	return n.label
+}
+
+func (n *BranchStmtNode) SetLabel(v Node) {
+	n.label = v
+}
+
+func (n *BranchStmtNode) BuildLink() {
+	if !n.Tok().IsDummy() {
+		tok := n.Tok()
+		tok.BuildLink()
+		tok.SetParent(n)
+		tok.SetSelfField("tok")
+		tok.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BranchStmtNode).SetTok(n)
+		})
+	}
+	if !n.Label().IsDummy() {
+		label := n.Label()
+		label.BuildLink()
+		label.SetParent(n)
+		label.SetSelfField("label")
+		label.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BranchStmtNode).SetLabel(n)
+		})
+	}
+}
+
+func (n *BranchStmtNode) Fields() []string {
+	return []string{
+		"tok",
+		"label",
+	}
+}
+
+func (n *BranchStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "tok" {
+		return n.Tok()
+	}
+	if field == "label" {
+		return n.Label()
+	}
+	return nil
+}
+
+func (n *BranchStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetTok(nodes[0])
+	n.SetLabel(nodes[1])
+}
+
+func (n *BranchStmtNode) Fork() Node {
+	_ret := &BranchStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		tok:      n.tok.Fork(),
+		label:    n.label.Fork(),
+	}
+	_ret.tok.SetParent(_ret)
+	_ret.label.SetParent(_ret)
+	return _ret
+}
+
+func (n *BranchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.tok.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.label.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *BranchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"branch_stmt\""
+	ret["tok"] = DumpNode(n.Tok(), hook)
+	ret["label"] = DumpNode(n.Label(), hook)
+	return ret
+}
+
+func NewDeferStmtNode(filePath string, fileContent []rune, call Node, start, end Position) Node {
+	if call == nil {
+		call = DummyNode
+	}
+	_1 := &DeferStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeDeferStmt, start, end),
+		call:     call,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type DeferStmtNode struct {
+	*BaseNode
+	call Node
+}
+
+func (n *DeferStmtNode) Call() Node {
+	return n.call
+}
+
+func (n *DeferStmtNode) SetCall(v Node) {
+	n.call = v
+}
+
+func (n *DeferStmtNode) BuildLink() {
+	if !n.Call().IsDummy() {
+		call := n.Call()
+		call.BuildLink()
+		call.SetParent(n)
+		call.SetSelfField("call")
+		call.SetReplaceSelf(func(n Node) {
+			n.Parent().(*DeferStmtNode).SetCall(n)
+		})
+	}
+}
+
+func (n *DeferStmtNode) Fields() []string {
+	return []string{
+		"call",
+	}
+}
+
+func (n *DeferStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "call" {
+		return n.Call()
+	}
+	return nil
+}
+
+func (n *DeferStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetCall(nodes[0])
+}
+
+func (n *DeferStmtNode) Fork() Node {
+	_ret := &DeferStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		call:     n.call.Fork(),
+	}
+	_ret.call.SetParent(_ret)
+	return _ret
+}
+
+func (n *DeferStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.call.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *DeferStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"defer_stmt\""
+	ret["call"] = DumpNode(n.Call(), hook)
+	return ret
+}
+
+func NewGoStmtNode(filePath string, fileContent []rune, call Node, start, end Position) Node {
+	if call == nil {
+		call = DummyNode
+	}
+	_1 := &GoStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeGoStmt, start, end),
+		call:     call,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type GoStmtNode struct {
+	*BaseNode
+	call Node
+}
+
+func (n *GoStmtNode) Call() Node {
+	return n.call
+}
+
+func (n *GoStmtNode) SetCall(v Node) {
+	n.call = v
+}
+
+func (n *GoStmtNode) BuildLink() {
+	if !n.Call().IsDummy() {
+		call := n.Call()
+		call.BuildLink()
+		call.SetParent(n)
+		call.SetSelfField("call")
+		call.SetReplaceSelf(func(n Node) {
+			n.Parent().(*GoStmtNode).SetCall(n)
+		})
+	}
+}
+
+func (n *GoStmtNode) Fields() []string {
+	return []string{
+		"call",
+	}
+}
+
+func (n *GoStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "call" {
+		return n.Call()
+	}
+	return nil
+}
+
+func (n *GoStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetCall(nodes[0])
+}
+
+func (n *GoStmtNode) Fork() Node {
+	_ret := &GoStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		call:     n.call.Fork(),
+	}
+	_ret.call.SetParent(_ret)
+	return _ret
+}
+
+func (n *GoStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.call.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *GoStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"go_stmt\""
+	ret["call"] = DumpNode(n.Call(), hook)
+	return ret
+}
+
+func NewSendStmtNode(filePath string, fileContent []rune, chan_ Node, value Node, start, end Position) Node {
+	if chan_ == nil {
+		chan_ = DummyNode
+	}
+	if value == nil {
+		value = DummyNode
+	}
+	_1 := &SendStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSendStmt, start, end),
+		chan_:    chan_,
+		value:    value,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SendStmtNode struct {
+	*BaseNode
+	chan_ Node
+	value Node
+}
+
+func (n *SendStmtNode) Chan() Node {
+	return n.chan_
+}
+
+func (n *SendStmtNode) SetChan(v Node) {
+	n.chan_ = v
+}
+
+func (n *SendStmtNode) Value() Node {
+	return n.value
+}
+
+func (n *SendStmtNode) SetValue(v Node) {
+	n.value = v
+}
+
+func (n *SendStmtNode) BuildLink() {
+	if !n.Chan().IsDummy() {
+		chan_ := n.Chan()
+		chan_.BuildLink()
+		chan_.SetParent(n)
+		chan_.SetSelfField("chan_")
+		chan_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SendStmtNode).SetChan(n)
+		})
+	}
+	if !n.Value().IsDummy() {
+		value := n.Value()
+		value.BuildLink()
+		value.SetParent(n)
+		value.SetSelfField("value")
+		value.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SendStmtNode).SetValue(n)
+		})
+	}
+}
+
+func (n *SendStmtNode) Fields() []string {
+	return []string{
+		"chan_",
+		"value",
+	}
+}
+
+func (n *SendStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "chan_" {
+		return n.Chan()
+	}
+	if field == "value" {
+		return n.Value()
+	}
+	return nil
+}
+
+func (n *SendStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetChan(nodes[0])
+	n.SetValue(nodes[1])
+}
+
+func (n *SendStmtNode) Fork() Node {
+	_ret := &SendStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		chan_:    n.chan_.Fork(),
+		value:    n.value.Fork(),
+	}
+	_ret.chan_.SetParent(_ret)
+	_ret.value.SetParent(_ret)
+	return _ret
+}
+
+func (n *SendStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.chan_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.value.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SendStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"send_stmt\""
+	ret["chan"] = DumpNode(n.Chan(), hook)
+	ret["value"] = DumpNode(n.Value(), hook)
+	return ret
+}
+
+func NewExprStmtNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ExprStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeExprStmt, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ExprStmtNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ExprStmtNode) X() Node {
+	return n.x
+}
+
+func (n *ExprStmtNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ExprStmtNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ExprStmtNode).SetX(n)
+		})
+	}
+}
+
+func (n *ExprStmtNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ExprStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ExprStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ExprStmtNode) Fork() Node {
+	_ret := &ExprStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ExprStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ExprStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"expr_stmt\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewIncDecStmtNode(filePath string, fileContent []rune, x Node, tok Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if tok == nil {
+		tok = DummyNode
+	}
+	_1 := &IncDecStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIncDecStmt, start, end),
+		x:        x,
+		tok:      tok,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type IncDecStmtNode struct {
+	*BaseNode
+	x   Node
+	tok Node
+}
+
+func (n *IncDecStmtNode) X() Node {
+	return n.x
+}
+
+func (n *IncDecStmtNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *IncDecStmtNode) Tok() Node {
+	return n.tok
+}
+
+func (n *IncDecStmtNode) SetTok(v Node) {
+	n.tok = v
+}
+
+func (n *IncDecStmtNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IncDecStmtNode).SetX(n)
+		})
+	}
+	if !n.Tok().IsDummy() {
+		tok := n.Tok()
+		tok.BuildLink()
+		tok.SetParent(n)
+		tok.SetSelfField("tok")
+		tok.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IncDecStmtNode).SetTok(n)
+		})
+	}
+}
+
+func (n *IncDecStmtNode) Fields() []string {
+	return []string{
+		"x",
+		"tok",
+	}
+}
+
+func (n *IncDecStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "tok" {
+		return n.Tok()
+	}
+	return nil
+}
+
+func (n *IncDecStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetTok(nodes[1])
+}
+
+func (n *IncDecStmtNode) Fork() Node {
+	_ret := &IncDecStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		tok:      n.tok.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.tok.SetParent(_ret)
+	return _ret
+}
+
+func (n *IncDecStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.tok.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *IncDecStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"inc_dec_stmt\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["tok"] = DumpNode(n.Tok(), hook)
+	return ret
+}
+
+func NewIfStmtNode(filePath string, fileContent []rune, init Node, cond Node, body Node, else_ Node, start, end Position) Node {
+	if init == nil {
+		init = DummyNode
+	}
+	if cond == nil {
+		cond = DummyNode
+	}
+	if body == nil {
+		body = DummyNode
+	}
+	if else_ == nil {
+		else_ = DummyNode
+	}
+	_1 := &IfStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIfStmt, start, end),
+		init:     init,
+		cond:     cond,
+		body:     body,
+		else_:    else_,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type IfStmtNode struct {
+	*BaseNode
+	init  Node
+	cond  Node
+	body  Node
+	else_ Node
+}
+
+func (n *IfStmtNode) Init() Node {
+	return n.init
+}
+
+func (n *IfStmtNode) SetInit(v Node) {
+	n.init = v
+}
+
+func (n *IfStmtNode) Cond() Node {
+	return n.cond
+}
+
+func (n *IfStmtNode) SetCond(v Node) {
+	n.cond = v
+}
+
+func (n *IfStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *IfStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *IfStmtNode) Else() Node {
+	return n.else_
+}
+
+func (n *IfStmtNode) SetElse(v Node) {
+	n.else_ = v
+}
+
+func (n *IfStmtNode) BuildLink() {
+	if !n.Init().IsDummy() {
+		init := n.Init()
+		init.BuildLink()
+		init.SetParent(n)
+		init.SetSelfField("init")
+		init.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IfStmtNode).SetInit(n)
+		})
+	}
+	if !n.Cond().IsDummy() {
+		cond := n.Cond()
+		cond.BuildLink()
+		cond.SetParent(n)
+		cond.SetSelfField("cond")
+		cond.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IfStmtNode).SetCond(n)
+		})
+	}
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IfStmtNode).SetBody(n)
+		})
+	}
+	if !n.Else().IsDummy() {
+		else_ := n.Else()
+		else_.BuildLink()
+		else_.SetParent(n)
+		else_.SetSelfField("else_")
+		else_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IfStmtNode).SetElse(n)
+		})
+	}
+}
+
+func (n *IfStmtNode) Fields() []string {
+	return []string{
+		"init",
+		"cond",
+		"body",
+		"else_",
+	}
+}
+
+func (n *IfStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "init" {
+		return n.Init()
+	}
+	if field == "cond" {
+		return n.Cond()
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	if field == "else_" {
+		return n.Else()
+	}
+	return nil
+}
+
+func (n *IfStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 4 {
+		return
+	}
+	n.SetInit(nodes[0])
+	n.SetCond(nodes[1])
+	n.SetBody(nodes[2])
+	n.SetElse(nodes[3])
+}
+
+func (n *IfStmtNode) Fork() Node {
+	_ret := &IfStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		init:     n.init.Fork(),
+		cond:     n.cond.Fork(),
+		body:     n.body.Fork(),
+		else_:    n.else_.Fork(),
+	}
+	_ret.init.SetParent(_ret)
+	_ret.cond.SetParent(_ret)
+	_ret.body.SetParent(_ret)
+	_ret.else_.SetParent(_ret)
+	return _ret
+}
+
+func (n *IfStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.init.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.cond.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.else_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *IfStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"if_stmt\""
+	ret["init"] = DumpNode(n.Init(), hook)
+	ret["cond"] = DumpNode(n.Cond(), hook)
+	ret["body"] = DumpNode(n.Body(), hook)
+	ret["else"] = DumpNode(n.Else(), hook)
+	return ret
+}
+
+func NewForStmtNode(filePath string, fileContent []rune, init Node, cond Node, post Node, body Node, start, end Position) Node {
+	if init == nil {
+		init = DummyNode
+	}
+	if cond == nil {
+		cond = DummyNode
+	}
+	if post == nil {
+		post = DummyNode
+	}
+	if body == nil {
+		body = DummyNode
+	}
+	_1 := &ForStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeForStmt, start, end),
+		init:     init,
+		cond:     cond,
+		post:     post,
+		body:     body,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ForStmtNode struct {
+	*BaseNode
+	init Node
+	cond Node
+	post Node
+	body Node
+}
+
+func (n *ForStmtNode) Init() Node {
+	return n.init
+}
+
+func (n *ForStmtNode) SetInit(v Node) {
+	n.init = v
+}
+
+func (n *ForStmtNode) Cond() Node {
+	return n.cond
+}
+
+func (n *ForStmtNode) SetCond(v Node) {
+	n.cond = v
+}
+
+func (n *ForStmtNode) Post() Node {
+	return n.post
+}
+
+func (n *ForStmtNode) SetPost(v Node) {
+	n.post = v
+}
+
+func (n *ForStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *ForStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *ForStmtNode) BuildLink() {
+	if !n.Init().IsDummy() {
+		init := n.Init()
+		init.BuildLink()
+		init.SetParent(n)
+		init.SetSelfField("init")
+		init.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ForStmtNode).SetInit(n)
+		})
+	}
+	if !n.Cond().IsDummy() {
+		cond := n.Cond()
+		cond.BuildLink()
+		cond.SetParent(n)
+		cond.SetSelfField("cond")
+		cond.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ForStmtNode).SetCond(n)
+		})
+	}
+	if !n.Post().IsDummy() {
+		post := n.Post()
+		post.BuildLink()
+		post.SetParent(n)
+		post.SetSelfField("post")
+		post.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ForStmtNode).SetPost(n)
+		})
+	}
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ForStmtNode).SetBody(n)
+		})
+	}
+}
+
+func (n *ForStmtNode) Fields() []string {
+	return []string{
+		"init",
+		"cond",
+		"post",
+		"body",
+	}
+}
+
+func (n *ForStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "init" {
+		return n.Init()
+	}
+	if field == "cond" {
+		return n.Cond()
+	}
+	if field == "post" {
+		return n.Post()
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	return nil
+}
+
+func (n *ForStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 4 {
+		return
+	}
+	n.SetInit(nodes[0])
+	n.SetCond(nodes[1])
+	n.SetPost(nodes[2])
+	n.SetBody(nodes[3])
+}
+
+func (n *ForStmtNode) Fork() Node {
+	_ret := &ForStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		init:     n.init.Fork(),
+		cond:     n.cond.Fork(),
+		post:     n.post.Fork(),
+		body:     n.body.Fork(),
+	}
+	_ret.init.SetParent(_ret)
+	_ret.cond.SetParent(_ret)
+	_ret.post.SetParent(_ret)
+	_ret.body.SetParent(_ret)
+	return _ret
+}
+
+func (n *ForStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.init.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.cond.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.post.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ForStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"for_stmt\""
+	ret["init"] = DumpNode(n.Init(), hook)
+	ret["cond"] = DumpNode(n.Cond(), hook)
+	ret["post"] = DumpNode(n.Post(), hook)
+	ret["body"] = DumpNode(n.Body(), hook)
+	return ret
+}
+
+func NewRangeStmtNode(filePath string, fileContent []rune, key Node, value Node, x Node, body Node, tok Node, start, end Position) Node {
+	if key == nil {
+		key = DummyNode
+	}
+	if value == nil {
+		value = DummyNode
+	}
+	if x == nil {
+		x = DummyNode
+	}
+	if body == nil {
+		body = DummyNode
+	}
+	if tok == nil {
+		tok = DummyNode
+	}
+	_1 := &RangeStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeRangeStmt, start, end),
+		key:      key,
+		value:    value,
+		x:        x,
+		body:     body,
+		tok:      tok,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type RangeStmtNode struct {
+	*BaseNode
+	key   Node
+	value Node
+	x     Node
+	body  Node
+	tok   Node
+}
+
+func (n *RangeStmtNode) Key() Node {
+	return n.key
+}
+
+func (n *RangeStmtNode) SetKey(v Node) {
+	n.key = v
+}
+
+func (n *RangeStmtNode) Value() Node {
+	return n.value
+}
+
+func (n *RangeStmtNode) SetValue(v Node) {
+	n.value = v
+}
+
+func (n *RangeStmtNode) X() Node {
+	return n.x
+}
+
+func (n *RangeStmtNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *RangeStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *RangeStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *RangeStmtNode) Tok() Node {
+	return n.tok
+}
+
+func (n *RangeStmtNode) SetTok(v Node) {
+	n.tok = v
+}
+
+func (n *RangeStmtNode) BuildLink() {
+	if !n.Key().IsDummy() {
+		key := n.Key()
+		key.BuildLink()
+		key.SetParent(n)
+		key.SetSelfField("key")
+		key.SetReplaceSelf(func(n Node) {
+			n.Parent().(*RangeStmtNode).SetKey(n)
+		})
+	}
+	if !n.Value().IsDummy() {
+		value := n.Value()
+		value.BuildLink()
+		value.SetParent(n)
+		value.SetSelfField("value")
+		value.SetReplaceSelf(func(n Node) {
+			n.Parent().(*RangeStmtNode).SetValue(n)
+		})
+	}
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*RangeStmtNode).SetX(n)
+		})
+	}
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*RangeStmtNode).SetBody(n)
+		})
+	}
+	if !n.Tok().IsDummy() {
+		tok := n.Tok()
+		tok.BuildLink()
+		tok.SetParent(n)
+		tok.SetSelfField("tok")
+		tok.SetReplaceSelf(func(n Node) {
+			n.Parent().(*RangeStmtNode).SetTok(n)
+		})
+	}
+}
+
+func (n *RangeStmtNode) Fields() []string {
+	return []string{
+		"key",
+		"value",
+		"x",
+		"body",
+		"tok",
+	}
+}
+
+func (n *RangeStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "key" {
+		return n.Key()
+	}
+	if field == "value" {
+		return n.Value()
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	if field == "tok" {
+		return n.Tok()
+	}
+	return nil
+}
+
+func (n *RangeStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 5 {
+		return
+	}
+	n.SetKey(nodes[0])
+	n.SetValue(nodes[1])
+	n.SetX(nodes[2])
+	n.SetBody(nodes[3])
+	n.SetTok(nodes[4])
+}
+
+func (n *RangeStmtNode) Fork() Node {
+	_ret := &RangeStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		key:      n.key.Fork(),
+		value:    n.value.Fork(),
+		x:        n.x.Fork(),
+		body:     n.body.Fork(),
+		tok:      n.tok.Fork(),
+	}
+	_ret.key.SetParent(_ret)
+	_ret.value.SetParent(_ret)
+	_ret.x.SetParent(_ret)
+	_ret.body.SetParent(_ret)
+	_ret.tok.SetParent(_ret)
+	return _ret
+}
+
+func (n *RangeStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.key.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.value.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.tok.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *RangeStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"range_stmt\""
+	ret["key"] = DumpNode(n.Key(), hook)
+	ret["value"] = DumpNode(n.Value(), hook)
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["body"] = DumpNode(n.Body(), hook)
+	ret["tok"] = DumpNode(n.Tok(), hook)
+	return ret
+}
+
+func NewSelectStmtNode(filePath string, fileContent []rune, body Node, start, end Position) Node {
+	if body == nil {
+		body = DummyNode
+	}
+	_1 := &SelectStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSelectStmt, start, end),
+		body:     body,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SelectStmtNode struct {
+	*BaseNode
+	body Node
+}
+
+func (n *SelectStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *SelectStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *SelectStmtNode) BuildLink() {
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SelectStmtNode).SetBody(n)
+		})
+	}
+}
+
+func (n *SelectStmtNode) Fields() []string {
+	return []string{
+		"body",
+	}
+}
+
+func (n *SelectStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	return nil
+}
+
+func (n *SelectStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetBody(nodes[0])
+}
+
+func (n *SelectStmtNode) Fork() Node {
+	_ret := &SelectStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		body:     n.body.Fork(),
+	}
+	_ret.body.SetParent(_ret)
+	return _ret
+}
+
+func (n *SelectStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SelectStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"select_stmt\""
+	ret["body"] = DumpNode(n.Body(), hook)
+	return ret
+}
+
+func NewSwitchStmtNode(filePath string, fileContent []rune, init Node, tag Node, body Node, start, end Position) Node {
+	if init == nil {
+		init = DummyNode
+	}
+	if tag == nil {
+		tag = DummyNode
+	}
+	if body == nil {
+		body = DummyNode
+	}
+	_1 := &SwitchStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSwitchStmt, start, end),
+		init:     init,
+		tag:      tag,
+		body:     body,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SwitchStmtNode struct {
+	*BaseNode
+	init Node
+	tag  Node
+	body Node
+}
+
+func (n *SwitchStmtNode) Init() Node {
+	return n.init
+}
+
+func (n *SwitchStmtNode) SetInit(v Node) {
+	n.init = v
+}
+
+func (n *SwitchStmtNode) Tag() Node {
+	return n.tag
+}
+
+func (n *SwitchStmtNode) SetTag(v Node) {
+	n.tag = v
+}
+
+func (n *SwitchStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *SwitchStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *SwitchStmtNode) BuildLink() {
+	if !n.Init().IsDummy() {
+		init := n.Init()
+		init.BuildLink()
+		init.SetParent(n)
+		init.SetSelfField("init")
+		init.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SwitchStmtNode).SetInit(n)
+		})
+	}
+	if !n.Tag().IsDummy() {
+		tag := n.Tag()
+		tag.BuildLink()
+		tag.SetParent(n)
+		tag.SetSelfField("tag")
+		tag.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SwitchStmtNode).SetTag(n)
+		})
+	}
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SwitchStmtNode).SetBody(n)
+		})
+	}
+}
+
+func (n *SwitchStmtNode) Fields() []string {
+	return []string{
+		"init",
+		"tag",
+		"body",
+	}
+}
+
+func (n *SwitchStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "init" {
+		return n.Init()
+	}
+	if field == "tag" {
+		return n.Tag()
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	return nil
+}
+
+func (n *SwitchStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetInit(nodes[0])
+	n.SetTag(nodes[1])
+	n.SetBody(nodes[2])
+}
+
+func (n *SwitchStmtNode) Fork() Node {
+	_ret := &SwitchStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		init:     n.init.Fork(),
+		tag:      n.tag.Fork(),
+		body:     n.body.Fork(),
+	}
+	_ret.init.SetParent(_ret)
+	_ret.tag.SetParent(_ret)
+	_ret.body.SetParent(_ret)
+	return _ret
+}
+
+func (n *SwitchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.init.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.tag.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SwitchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"switch_stmt\""
+	ret["init"] = DumpNode(n.Init(), hook)
+	ret["tag"] = DumpNode(n.Tag(), hook)
+	ret["body"] = DumpNode(n.Body(), hook)
+	return ret
+}
+
+func NewTypeSwitchStmtNode(filePath string, fileContent []rune, init Node, assign Node, body Node, start, end Position) Node {
+	if init == nil {
+		init = DummyNode
+	}
+	if assign == nil {
+		assign = DummyNode
+	}
+	if body == nil {
+		body = DummyNode
+	}
+	_1 := &TypeSwitchStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeSwitchStmt, start, end),
+		init:     init,
+		assign:   assign,
+		body:     body,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type TypeSwitchStmtNode struct {
+	*BaseNode
+	init   Node
+	assign Node
+	body   Node
+}
+
+func (n *TypeSwitchStmtNode) Init() Node {
+	return n.init
+}
+
+func (n *TypeSwitchStmtNode) SetInit(v Node) {
+	n.init = v
+}
+
+func (n *TypeSwitchStmtNode) Assign() Node {
+	return n.assign
+}
+
+func (n *TypeSwitchStmtNode) SetAssign(v Node) {
+	n.assign = v
+}
+
+func (n *TypeSwitchStmtNode) Body() Node {
+	return n.body
+}
+
+func (n *TypeSwitchStmtNode) SetBody(v Node) {
+	n.body = v
+}
+
+func (n *TypeSwitchStmtNode) BuildLink() {
+	if !n.Init().IsDummy() {
+		init := n.Init()
+		init.BuildLink()
+		init.SetParent(n)
+		init.SetSelfField("init")
+		init.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeSwitchStmtNode).SetInit(n)
+		})
+	}
+	if !n.Assign().IsDummy() {
+		assign := n.Assign()
+		assign.BuildLink()
+		assign.SetParent(n)
+		assign.SetSelfField("assign")
+		assign.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeSwitchStmtNode).SetAssign(n)
+		})
+	}
+	if !n.Body().IsDummy() {
+		body := n.Body()
+		body.BuildLink()
+		body.SetParent(n)
+		body.SetSelfField("body")
+		body.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeSwitchStmtNode).SetBody(n)
+		})
+	}
+}
+
+func (n *TypeSwitchStmtNode) Fields() []string {
+	return []string{
+		"init",
+		"assign",
+		"body",
+	}
+}
+
+func (n *TypeSwitchStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "init" {
+		return n.Init()
+	}
+	if field == "assign" {
+		return n.Assign()
+	}
+	if field == "body" {
+		return n.Body()
+	}
+	return nil
+}
+
+func (n *TypeSwitchStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetInit(nodes[0])
+	n.SetAssign(nodes[1])
+	n.SetBody(nodes[2])
+}
+
+func (n *TypeSwitchStmtNode) Fork() Node {
+	_ret := &TypeSwitchStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		init:     n.init.Fork(),
+		assign:   n.assign.Fork(),
+		body:     n.body.Fork(),
+	}
+	_ret.init.SetParent(_ret)
+	_ret.assign.SetParent(_ret)
+	_ret.body.SetParent(_ret)
+	return _ret
+}
+
+func (n *TypeSwitchStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.init.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.assign.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.body.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *TypeSwitchStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"type_switch_stmt\""
+	ret["init"] = DumpNode(n.Init(), hook)
+	ret["assign"] = DumpNode(n.Assign(), hook)
+	ret["body"] = DumpNode(n.Body(), hook)
+	return ret
+}
+
+func NewReturnStmtNode(filePath string, fileContent []rune, results Node, start, end Position) Node {
+	if results == nil {
+		results = DummyNode
+	}
+	_1 := &ReturnStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeReturnStmt, start, end),
+		results:  results,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ReturnStmtNode struct {
+	*BaseNode
+	results Node
+}
+
+func (n *ReturnStmtNode) Results() Node {
+	return n.results
+}
+
+func (n *ReturnStmtNode) SetResults(v Node) {
+	n.results = v
+}
+
+func (n *ReturnStmtNode) BuildLink() {
+	if !n.Results().IsDummy() {
+		results := n.Results()
+		results.BuildLink()
+		results.SetParent(n)
+		results.SetSelfField("results")
+		results.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ReturnStmtNode).SetResults(n)
+		})
+	}
+}
+
+func (n *ReturnStmtNode) Fields() []string {
+	return []string{
+		"results",
+	}
+}
+
+func (n *ReturnStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "results" {
+		return n.Results()
+	}
+	return nil
+}
+
+func (n *ReturnStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetResults(nodes[0])
+}
+
+func (n *ReturnStmtNode) Fork() Node {
+	_ret := &ReturnStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		results:  n.results.Fork(),
+	}
+	_ret.results.SetParent(_ret)
+	return _ret
+}
+
+func (n *ReturnStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.results.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ReturnStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"return_stmt\""
+	ret["results"] = DumpNode(n.Results(), hook)
+	return ret
+}
+
+func NewLabeledStmtNode(filePath string, fileContent []rune, label Node, stmt Node, start, end Position) Node {
+	if label == nil {
+		label = DummyNode
+	}
+	if stmt == nil {
+		stmt = DummyNode
+	}
+	_1 := &LabeledStmtNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeLabeledStmt, start, end),
+		label:    label,
+		stmt:     stmt,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type LabeledStmtNode struct {
+	*BaseNode
+	label Node
+	stmt  Node
+}
+
+func (n *LabeledStmtNode) Label() Node {
+	return n.label
+}
+
+func (n *LabeledStmtNode) SetLabel(v Node) {
+	n.label = v
+}
+
+func (n *LabeledStmtNode) Stmt() Node {
+	return n.stmt
+}
+
+func (n *LabeledStmtNode) SetStmt(v Node) {
+	n.stmt = v
+}
+
+func (n *LabeledStmtNode) BuildLink() {
+	if !n.Label().IsDummy() {
+		label := n.Label()
+		label.BuildLink()
+		label.SetParent(n)
+		label.SetSelfField("label")
+		label.SetReplaceSelf(func(n Node) {
+			n.Parent().(*LabeledStmtNode).SetLabel(n)
+		})
+	}
+	if !n.Stmt().IsDummy() {
+		stmt := n.Stmt()
+		stmt.BuildLink()
+		stmt.SetParent(n)
+		stmt.SetSelfField("stmt")
+		stmt.SetReplaceSelf(func(n Node) {
+			n.Parent().(*LabeledStmtNode).SetStmt(n)
+		})
+	}
+}
+
+func (n *LabeledStmtNode) Fields() []string {
+	return []string{
+		"label",
+		"stmt",
+	}
+}
+
+func (n *LabeledStmtNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "label" {
+		return n.Label()
+	}
+	if field == "stmt" {
+		return n.Stmt()
+	}
+	return nil
+}
+
+func (n *LabeledStmtNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetLabel(nodes[0])
+	n.SetStmt(nodes[1])
+}
+
+func (n *LabeledStmtNode) Fork() Node {
+	_ret := &LabeledStmtNode{
+		BaseNode: n.BaseNode.fork(),
+		label:    n.label.Fork(),
+		stmt:     n.stmt.Fork(),
+	}
+	_ret.label.SetParent(_ret)
+	_ret.stmt.SetParent(_ret)
+	return _ret
+}
+
+func (n *LabeledStmtNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.label.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.stmt.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *LabeledStmtNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"labeled_stmt\""
+	ret["label"] = DumpNode(n.Label(), hook)
+	ret["stmt"] = DumpNode(n.Stmt(), hook)
+	return ret
+}
+
+func NewBinaryExprNode(filePath string, fileContent []rune, x Node, y Node, op Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if y == nil {
+		y = DummyNode
+	}
+	if op == nil {
+		op = DummyNode
+	}
+	_1 := &BinaryExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeBinaryExpr, start, end),
+		x:        x,
+		y:        y,
+		op:       op,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type BinaryExprNode struct {
+	*BaseNode
+	x  Node
+	y  Node
+	op Node
+}
+
+func (n *BinaryExprNode) X() Node {
+	return n.x
+}
+
+func (n *BinaryExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *BinaryExprNode) Y() Node {
+	return n.y
+}
+
+func (n *BinaryExprNode) SetY(v Node) {
+	n.y = v
+}
+
+func (n *BinaryExprNode) Op() Node {
+	return n.op
+}
+
+func (n *BinaryExprNode) SetOp(v Node) {
+	n.op = v
+}
+
+func (n *BinaryExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BinaryExprNode).SetX(n)
+		})
+	}
+	if !n.Y().IsDummy() {
+		y := n.Y()
+		y.BuildLink()
+		y.SetParent(n)
+		y.SetSelfField("y")
+		y.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BinaryExprNode).SetY(n)
+		})
+	}
+	if !n.Op().IsDummy() {
+		op := n.Op()
+		op.BuildLink()
+		op.SetParent(n)
+		op.SetSelfField("op")
+		op.SetReplaceSelf(func(n Node) {
+			n.Parent().(*BinaryExprNode).SetOp(n)
+		})
+	}
+}
+
+func (n *BinaryExprNode) Fields() []string {
+	return []string{
+		"x",
+		"y",
+		"op",
+	}
+}
+
+func (n *BinaryExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "y" {
+		return n.Y()
+	}
+	if field == "op" {
+		return n.Op()
+	}
+	return nil
+}
+
+func (n *BinaryExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetY(nodes[1])
+	n.SetOp(nodes[2])
+}
+
+func (n *BinaryExprNode) Fork() Node {
+	_ret := &BinaryExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		y:        n.y.Fork(),
+		op:       n.op.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.y.SetParent(_ret)
+	_ret.op.SetParent(_ret)
+	return _ret
+}
+
+func (n *BinaryExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.y.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.op.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *BinaryExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"binary_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["y"] = DumpNode(n.Y(), hook)
+	ret["op"] = DumpNode(n.Op(), hook)
+	return ret
+}
+
+func NewCallExprNode(filePath string, fileContent []rune, fun Node, typeArgs Node, args Node, start, end Position) Node {
+	if fun == nil {
+		fun = DummyNode
+	}
+	if typeArgs == nil {
+		typeArgs = DummyNode
+	}
+	if args == nil {
+		args = DummyNode
+	}
+	_1 := &CallExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeCallExpr, start, end),
+		fun:      fun,
+		typeArgs: typeArgs,
+		args:     args,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type CallExprNode struct {
+	*BaseNode
+	fun      Node
+	typeArgs Node
+	args     Node
+}
+
+func (n *CallExprNode) Fun() Node {
+	return n.fun
+}
+
+func (n *CallExprNode) SetFun(v Node) {
+	n.fun = v
+}
+
+func (n *CallExprNode) TypeArgs() Node {
+	return n.typeArgs
+}
+
+func (n *CallExprNode) SetTypeArgs(v Node) {
+	n.typeArgs = v
+}
+
+func (n *CallExprNode) Args() Node {
+	return n.args
+}
+
+func (n *CallExprNode) SetArgs(v Node) {
+	n.args = v
+}
+
+func (n *CallExprNode) BuildLink() {
+	if !n.Fun().IsDummy() {
+		fun := n.Fun()
+		fun.BuildLink()
+		fun.SetParent(n)
+		fun.SetSelfField("fun")
+		fun.SetReplaceSelf(func(n Node) {
+			n.Parent().(*CallExprNode).SetFun(n)
+		})
+	}
+	if !n.TypeArgs().IsDummy() {
+		typeArgs := n.TypeArgs()
+		typeArgs.BuildLink()
+		typeArgs.SetParent(n)
+		typeArgs.SetSelfField("type_args")
+		typeArgs.SetReplaceSelf(func(n Node) {
+			n.Parent().(*CallExprNode).SetTypeArgs(n)
+		})
+	}
+	if !n.Args().IsDummy() {
+		args := n.Args()
+		args.BuildLink()
+		args.SetParent(n)
+		args.SetSelfField("args")
+		args.SetReplaceSelf(func(n Node) {
+			n.Parent().(*CallExprNode).SetArgs(n)
+		})
+	}
+}
+
+func (n *CallExprNode) Fields() []string {
+	return []string{
+		"fun",
+		"type_args",
+		"args",
+	}
+}
+
+func (n *CallExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "fun" {
+		return n.Fun()
+	}
+	if field == "type_args" {
+		return n.TypeArgs()
+	}
+	if field == "args" {
+		return n.Args()
+	}
+	return nil
+}
+
+func (n *CallExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 3 {
+		return
+	}
+	n.SetFun(nodes[0])
+	n.SetTypeArgs(nodes[1])
+	n.SetArgs(nodes[2])
+}
+
+func (n *CallExprNode) Fork() Node {
+	_ret := &CallExprNode{
+		BaseNode: n.BaseNode.fork(),
+		fun:      n.fun.Fork(),
+		typeArgs: n.typeArgs.Fork(),
+		args:     n.args.Fork(),
+	}
+	_ret.fun.SetParent(_ret)
+	_ret.typeArgs.SetParent(_ret)
+	_ret.args.SetParent(_ret)
+	return _ret
+}
+
+func (n *CallExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.fun.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.typeArgs.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.args.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *CallExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"call_expr\""
+	ret["fun"] = DumpNode(n.Fun(), hook)
+	ret["type_args"] = DumpNode(n.TypeArgs(), hook)
+	ret["args"] = DumpNode(n.Args(), hook)
+	return ret
+}
+
+func NewIndexExprNode(filePath string, fileContent []rune, x Node, index Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if index == nil {
+		index = DummyNode
+	}
+	_1 := &IndexExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeIndexExpr, start, end),
+		x:        x,
+		index:    index,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type IndexExprNode struct {
+	*BaseNode
+	x     Node
+	index Node
+}
+
+func (n *IndexExprNode) X() Node {
+	return n.x
+}
+
+func (n *IndexExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *IndexExprNode) Index() Node {
+	return n.index
+}
+
+func (n *IndexExprNode) SetIndex(v Node) {
+	n.index = v
+}
+
+func (n *IndexExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IndexExprNode).SetX(n)
+		})
+	}
+	if !n.Index().IsDummy() {
+		index := n.Index()
+		index.BuildLink()
+		index.SetParent(n)
+		index.SetSelfField("index")
+		index.SetReplaceSelf(func(n Node) {
+			n.Parent().(*IndexExprNode).SetIndex(n)
+		})
+	}
+}
+
+func (n *IndexExprNode) Fields() []string {
+	return []string{
+		"x",
+		"index",
+	}
+}
+
+func (n *IndexExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "index" {
+		return n.Index()
+	}
+	return nil
+}
+
+func (n *IndexExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetIndex(nodes[1])
+}
+
+func (n *IndexExprNode) Fork() Node {
+	_ret := &IndexExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		index:    n.index.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.index.SetParent(_ret)
+	return _ret
+}
+
+func (n *IndexExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.index.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *IndexExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"index_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["index"] = DumpNode(n.Index(), hook)
+	return ret
+}
+
+func NewKeyValueExprNode(filePath string, fileContent []rune, key Node, value Node, start, end Position) Node {
+	if key == nil {
+		key = DummyNode
+	}
+	if value == nil {
+		value = DummyNode
+	}
+	_1 := &KeyValueExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeKeyValueExpr, start, end),
+		key:      key,
+		value:    value,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type KeyValueExprNode struct {
+	*BaseNode
+	key   Node
+	value Node
+}
+
+func (n *KeyValueExprNode) Key() Node {
+	return n.key
+}
+
+func (n *KeyValueExprNode) SetKey(v Node) {
+	n.key = v
+}
+
+func (n *KeyValueExprNode) Value() Node {
+	return n.value
+}
+
+func (n *KeyValueExprNode) SetValue(v Node) {
+	n.value = v
+}
+
+func (n *KeyValueExprNode) BuildLink() {
+	if !n.Key().IsDummy() {
+		key := n.Key()
+		key.BuildLink()
+		key.SetParent(n)
+		key.SetSelfField("key")
+		key.SetReplaceSelf(func(n Node) {
+			n.Parent().(*KeyValueExprNode).SetKey(n)
+		})
+	}
+	if !n.Value().IsDummy() {
+		value := n.Value()
+		value.BuildLink()
+		value.SetParent(n)
+		value.SetSelfField("value")
+		value.SetReplaceSelf(func(n Node) {
+			n.Parent().(*KeyValueExprNode).SetValue(n)
+		})
+	}
+}
+
+func (n *KeyValueExprNode) Fields() []string {
+	return []string{
+		"key",
+		"value",
+	}
+}
+
+func (n *KeyValueExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "key" {
+		return n.Key()
+	}
+	if field == "value" {
+		return n.Value()
+	}
+	return nil
+}
+
+func (n *KeyValueExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetKey(nodes[0])
+	n.SetValue(nodes[1])
+}
+
+func (n *KeyValueExprNode) Fork() Node {
+	_ret := &KeyValueExprNode{
+		BaseNode: n.BaseNode.fork(),
+		key:      n.key.Fork(),
+		value:    n.value.Fork(),
+	}
+	_ret.key.SetParent(_ret)
+	_ret.value.SetParent(_ret)
+	return _ret
+}
+
+func (n *KeyValueExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.key.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.value.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *KeyValueExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"key_value_expr\""
+	ret["key"] = DumpNode(n.Key(), hook)
+	ret["value"] = DumpNode(n.Value(), hook)
+	return ret
+}
+
+func NewParenExprNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &ParenExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeParenExpr, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type ParenExprNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *ParenExprNode) X() Node {
+	return n.x
+}
+
+func (n *ParenExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *ParenExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ParenExprNode).SetX(n)
+		})
+	}
+}
+
+func (n *ParenExprNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *ParenExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *ParenExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *ParenExprNode) Fork() Node {
+	_ret := &ParenExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *ParenExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *ParenExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"paren_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewSelectorExprNode(filePath string, fileContent []rune, x Node, sel Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if sel == nil {
+		sel = DummyNode
+	}
+	_1 := &SelectorExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSelectorExpr, start, end),
+		x:        x,
+		sel:      sel,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SelectorExprNode struct {
+	*BaseNode
+	x   Node
+	sel Node
+}
+
+func (n *SelectorExprNode) X() Node {
+	return n.x
+}
+
+func (n *SelectorExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *SelectorExprNode) Sel() Node {
+	return n.sel
+}
+
+func (n *SelectorExprNode) SetSel(v Node) {
+	n.sel = v
+}
+
+func (n *SelectorExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SelectorExprNode).SetX(n)
+		})
+	}
+	if !n.Sel().IsDummy() {
+		sel := n.Sel()
+		sel.BuildLink()
+		sel.SetParent(n)
+		sel.SetSelfField("sel")
+		sel.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SelectorExprNode).SetSel(n)
+		})
+	}
+}
+
+func (n *SelectorExprNode) Fields() []string {
+	return []string{
+		"x",
+		"sel",
+	}
+}
+
+func (n *SelectorExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "sel" {
+		return n.Sel()
+	}
+	return nil
+}
+
+func (n *SelectorExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetSel(nodes[1])
+}
+
+func (n *SelectorExprNode) Fork() Node {
+	_ret := &SelectorExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		sel:      n.sel.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.sel.SetParent(_ret)
+	return _ret
+}
+
+func (n *SelectorExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.sel.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SelectorExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"selector_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["sel"] = DumpNode(n.Sel(), hook)
+	return ret
+}
+
+func NewStarExprNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &StarExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeStarExpr, start, end),
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type StarExprNode struct {
+	*BaseNode
+	x Node
+}
+
+func (n *StarExprNode) X() Node {
+	return n.x
+}
+
+func (n *StarExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *StarExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*StarExprNode).SetX(n)
+		})
+	}
+}
+
+func (n *StarExprNode) Fields() []string {
+	return []string{
+		"x",
+	}
+}
+
+func (n *StarExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *StarExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetX(nodes[0])
+}
+
+func (n *StarExprNode) Fork() Node {
+	_ret := &StarExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *StarExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *StarExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"star_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
+func NewTypeAssertExprNode(filePath string, fileContent []rune, x Node, type_ Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if type_ == nil {
+		type_ = DummyNode
+	}
+	_1 := &TypeAssertExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeTypeAssertExpr, start, end),
+		x:        x,
+		type_:    type_,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type TypeAssertExprNode struct {
+	*BaseNode
+	x     Node
+	type_ Node
+}
+
+func (n *TypeAssertExprNode) X() Node {
+	return n.x
+}
+
+func (n *TypeAssertExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *TypeAssertExprNode) Type() Node {
+	return n.type_
+}
+
+func (n *TypeAssertExprNode) SetType(v Node) {
+	n.type_ = v
+}
+
+func (n *TypeAssertExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeAssertExprNode).SetX(n)
+		})
+	}
+	if !n.Type().IsDummy() {
+		type_ := n.Type()
+		type_.BuildLink()
+		type_.SetParent(n)
+		type_.SetSelfField("type_")
+		type_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*TypeAssertExprNode).SetType(n)
+		})
+	}
+}
+
+func (n *TypeAssertExprNode) Fields() []string {
+	return []string{
+		"x",
+		"type_",
+	}
+}
+
+func (n *TypeAssertExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "type_" {
+		return n.Type()
+	}
+	return nil
+}
+
+func (n *TypeAssertExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetType(nodes[1])
+}
+
+func (n *TypeAssertExprNode) Fork() Node {
+	_ret := &TypeAssertExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		type_:    n.type_.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.type_.SetParent(_ret)
+	return _ret
+}
+
+func (n *TypeAssertExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.type_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *TypeAssertExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"type_assert_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
+	return ret
+}
+
+func NewSliceExprNode(filePath string, fileContent []rune, x Node, low Node, high Node, max_ Node, start, end Position) Node {
+	if x == nil {
+		x = DummyNode
+	}
+	if low == nil {
+		low = DummyNode
+	}
+	if high == nil {
+		high = DummyNode
+	}
+	if max_ == nil {
+		max_ = DummyNode
+	}
+	_1 := &SliceExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSliceExpr, start, end),
+		x:        x,
+		low:      low,
+		high:     high,
+		max_:     max_,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SliceExprNode struct {
+	*BaseNode
+	x    Node
+	low  Node
+	high Node
+	max_ Node
+}
+
+func (n *SliceExprNode) X() Node {
+	return n.x
+}
+
+func (n *SliceExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *SliceExprNode) Low() Node {
+	return n.low
+}
+
+func (n *SliceExprNode) SetLow(v Node) {
+	n.low = v
+}
+
+func (n *SliceExprNode) High() Node {
+	return n.high
+}
+
+func (n *SliceExprNode) SetHigh(v Node) {
+	n.high = v
+}
+
+func (n *SliceExprNode) Max() Node {
+	return n.max_
+}
+
+func (n *SliceExprNode) SetMax(v Node) {
+	n.max_ = v
+}
+
+func (n *SliceExprNode) BuildLink() {
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SliceExprNode).SetX(n)
+		})
+	}
+	if !n.Low().IsDummy() {
+		low := n.Low()
+		low.BuildLink()
+		low.SetParent(n)
+		low.SetSelfField("low")
+		low.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SliceExprNode).SetLow(n)
+		})
+	}
+	if !n.High().IsDummy() {
+		high := n.High()
+		high.BuildLink()
+		high.SetParent(n)
+		high.SetSelfField("high")
+		high.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SliceExprNode).SetHigh(n)
+		})
+	}
+	if !n.Max().IsDummy() {
+		max_ := n.Max()
+		max_.BuildLink()
+		max_.SetParent(n)
+		max_.SetSelfField("max_")
+		max_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SliceExprNode).SetMax(n)
+		})
+	}
+}
+
+func (n *SliceExprNode) Fields() []string {
+	return []string{
+		"x",
+		"low",
+		"high",
+		"max_",
+	}
+}
+
+func (n *SliceExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "x" {
+		return n.X()
+	}
+	if field == "low" {
+		return n.Low()
+	}
+	if field == "high" {
+		return n.High()
+	}
+	if field == "max_" {
+		return n.Max()
+	}
+	return nil
+}
+
+func (n *SliceExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 4 {
+		return
+	}
+	n.SetX(nodes[0])
+	n.SetLow(nodes[1])
+	n.SetHigh(nodes[2])
+	n.SetMax(nodes[3])
+}
+
+func (n *SliceExprNode) Fork() Node {
+	_ret := &SliceExprNode{
+		BaseNode: n.BaseNode.fork(),
+		x:        n.x.Fork(),
+		low:      n.low.Fork(),
+		high:     n.high.Fork(),
+		max_:     n.max_.Fork(),
+	}
+	_ret.x.SetParent(_ret)
+	_ret.low.SetParent(_ret)
+	_ret.high.SetParent(_ret)
+	_ret.max_.SetParent(_ret)
+	return _ret
+}
+
+func (n *SliceExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.low.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.high.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.max_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SliceExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"slice_expr\""
+	ret["x"] = DumpNode(n.X(), hook)
+	ret["low"] = DumpNode(n.Low(), hook)
+	ret["high"] = DumpNode(n.High(), hook)
+	ret["max"] = DumpNode(n.Max(), hook)
+	return ret
+}
+
+func NewUnaryExprNode(filePath string, fileContent []rune, op Node, x Node, start, end Position) Node {
+	if op == nil {
+		op = DummyNode
+	}
+	if x == nil {
+		x = DummyNode
+	}
+	_1 := &UnaryExprNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeUnaryExpr, start, end),
+		op:       op,
+		x:        x,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type UnaryExprNode struct {
+	*BaseNode
+	op Node
+	x  Node
+}
+
+func (n *UnaryExprNode) Op() Node {
+	return n.op
+}
+
+func (n *UnaryExprNode) SetOp(v Node) {
+	n.op = v
+}
+
+func (n *UnaryExprNode) X() Node {
+	return n.x
+}
+
+func (n *UnaryExprNode) SetX(v Node) {
+	n.x = v
+}
+
+func (n *UnaryExprNode) BuildLink() {
+	if !n.Op().IsDummy() {
+		op := n.Op()
+		op.BuildLink()
+		op.SetParent(n)
+		op.SetSelfField("op")
+		op.SetReplaceSelf(func(n Node) {
+			n.Parent().(*UnaryExprNode).SetOp(n)
+		})
+	}
+	if !n.X().IsDummy() {
+		x := n.X()
+		x.BuildLink()
+		x.SetParent(n)
+		x.SetSelfField("x")
+		x.SetReplaceSelf(func(n Node) {
+			n.Parent().(*UnaryExprNode).SetX(n)
+		})
+	}
+}
+
+func (n *UnaryExprNode) Fields() []string {
+	return []string{
+		"op",
+		"x",
+	}
+}
+
+func (n *UnaryExprNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "op" {
+		return n.Op()
+	}
+	if field == "x" {
+		return n.X()
+	}
+	return nil
+}
+
+func (n *UnaryExprNode) SetChild(nodes []Node) {
+	if len(nodes) != 2 {
+		return
+	}
+	n.SetOp(nodes[0])
+	n.SetX(nodes[1])
+}
+
+func (n *UnaryExprNode) Fork() Node {
+	_ret := &UnaryExprNode{
+		BaseNode: n.BaseNode.fork(),
+		op:       n.op.Fork(),
+		x:        n.x.Fork(),
+	}
+	_ret.op.SetParent(_ret)
+	_ret.x.SetParent(_ret)
+	return _ret
+}
+
+func (n *UnaryExprNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.op.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if n.x.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *UnaryExprNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"unary_expr\""
+	ret["op"] = DumpNode(n.Op(), hook)
+	ret["x"] = DumpNode(n.X(), hook)
+	return ret
+}
+
 func NewTokenizer(filePath string, fileContent []rune) *Tokenizer {
 	tk := &Tokenizer{
 		_filePath:  filePath,
@@ -11688,12 +12102,12 @@ func (ps *Parser) packageIdent() Node {
 
 /*
 import_decl:
-| 'import' '(' specs=(t=import_spec end_semi {t})* ')' ';'? {import_decl(specs)}
-| 'import' specs=import_spec ';'? {import_decl([specs])}
-_group_2 <-- (t=import_spec end_semi {t})
+| 'import' '(' specs=(t=import_spec semi {t})* ')' ';' {import_decl(specs)}
+| 'import' specs=import_spec ';' {import_decl([specs])}
+_group_2 <-- (t=import_spec semi {t})
 */
 func (ps *Parser) importDecl() Node {
-	/* 'import' '(' specs=(t=import_spec end_semi {t})* ')' ';'? {import_decl(specs)}
+	/* 'import' '(' specs=(t=import_spec semi {t})* ')' ';' {import_decl(specs)}
 	 */
 	pos := ps._mark()
 	for {
@@ -11726,11 +12140,13 @@ func (ps *Parser) importDecl() Node {
 		}
 		var _6 Node
 		_6 = ps._expectK(TokenTypeOpSemi)
-		_ = _6
+		if _6 == nil {
+			break
+		}
 		return NewImportDeclNode(ps._filePath, ps._fileContent, specs, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'import' specs=import_spec ';'? {import_decl([specs])}
+	/* 'import' specs=import_spec ';' {import_decl([specs])}
 	 */
 	for {
 		var specs Node
@@ -11745,7 +12161,9 @@ func (ps *Parser) importDecl() Node {
 		}
 		var _2 Node
 		_2 = ps._expectK(TokenTypeOpSemi)
-		_ = _2
+		if _2 == nil {
+			break
+		}
 		return NewImportDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{specs}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -11838,10 +12256,10 @@ func (ps *Parser) importPath() Node {
 
 /*
 function_decl:
-| 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';'? {function_decl(n, t, p, r, b)}
+| 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';' {function_decl(n, t, p, r, b)}
 */
 func (ps *Parser) functionDecl() Node {
-	/* 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';'? {function_decl(n, t, p, r, b)}
+	/* 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';' {function_decl(n, t, p, r, b)}
 	 */
 	pos := ps._mark()
 	for {
@@ -11902,7 +12320,9 @@ func (ps *Parser) functionDecl() Node {
 		_ = b
 		var _8 Node
 		_8 = ps._expectK(TokenTypeOpSemi)
-		_ = _8
+		if _8 == nil {
+			break
+		}
 		return NewFunctionDeclNode(ps._filePath, ps._fileContent, n, t, p, r, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12133,10 +12553,10 @@ func (ps *Parser) resultIdent() Node {
 
 /*
 method_decl:
-| 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';'? {method_decl(rc, n, p, rs, b)}
+| 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';' {method_decl(rc, n, p, rs, b)}
 */
 func (ps *Parser) methodDecl() Node {
-	/* 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';'? {method_decl(rc, n, p, rs, b)}
+	/* 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';' {method_decl(rc, n, p, rs, b)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12209,7 +12629,9 @@ func (ps *Parser) methodDecl() Node {
 		_ = b
 		var _10 Node
 		_10 = ps._expectK(TokenTypeOpSemi)
-		_ = _10
+		if _10 == nil {
+			break
+		}
 		return NewMethodDeclNode(ps._filePath, ps._fileContent, rc, n, p, rs, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12374,11 +12796,11 @@ func (ps *Parser) receiverGenericTypeIdent() Node {
 
 /*
 const_decl:
-| 'const' '(' c=const_spec_semi* ')' ';'? {const_decl(c)}
-| 'const' c=const_spec ';'? {const_decl([c])}
+| 'const' '(' c=const_spec_semi* ')' ';' {const_decl(c)}
+| 'const' c=const_spec ';' {const_decl([c])}
 */
 func (ps *Parser) constDecl() Node {
-	/* 'const' '(' c=const_spec_semi* ')' ';'? {const_decl(c)}
+	/* 'const' '(' c=const_spec_semi* ')' ';' {const_decl(c)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12411,11 +12833,13 @@ func (ps *Parser) constDecl() Node {
 		}
 		var _6 Node
 		_6 = ps._expectK(TokenTypeOpSemi)
-		_ = _6
+		if _6 == nil {
+			break
+		}
 		return NewConstDeclNode(ps._filePath, ps._fileContent, c, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'const' c=const_spec ';'? {const_decl([c])}
+	/* 'const' c=const_spec ';' {const_decl([c])}
 	 */
 	for {
 		var c Node
@@ -12430,7 +12854,9 @@ func (ps *Parser) constDecl() Node {
 		}
 		var _2 Node
 		_2 = ps._expectK(TokenTypeOpSemi)
-		_ = _2
+		if _2 == nil {
+			break
+		}
 		return NewConstDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{c}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12439,10 +12865,10 @@ func (ps *Parser) constDecl() Node {
 
 /*
 const_spec_semi:
-| c=const_spec end_semi {c}
+| c=const_spec semi {c}
 */
 func (ps *Parser) constSpecSemi() Node {
-	/* c=const_spec end_semi {c}
+	/* c=const_spec semi {c}
 	 */
 	pos := ps._mark()
 	for {
@@ -12452,7 +12878,7 @@ func (ps *Parser) constSpecSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -12551,11 +12977,11 @@ func (ps *Parser) constIdent() Node {
 
 /*
 var_decl:
-| 'var' '(' x=var_spec_semi* ')' ';'? {var_decl(x)}
-| 'var' x=var_spec ';'? {var_decl([x])}
+| 'var' '(' x=var_spec_semi* ')' ';' {var_decl(x)}
+| 'var' x=var_spec ';' {var_decl([x])}
 */
 func (ps *Parser) varDecl() Node {
-	/* 'var' '(' x=var_spec_semi* ')' ';'? {var_decl(x)}
+	/* 'var' '(' x=var_spec_semi* ')' ';' {var_decl(x)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12588,11 +13014,13 @@ func (ps *Parser) varDecl() Node {
 		}
 		var _6 Node
 		_6 = ps._expectK(TokenTypeOpSemi)
-		_ = _6
+		if _6 == nil {
+			break
+		}
 		return NewVarDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'var' x=var_spec ';'? {var_decl([x])}
+	/* 'var' x=var_spec ';' {var_decl([x])}
 	 */
 	for {
 		var x Node
@@ -12607,7 +13035,9 @@ func (ps *Parser) varDecl() Node {
 		}
 		var _2 Node
 		_2 = ps._expectK(TokenTypeOpSemi)
-		_ = _2
+		if _2 == nil {
+			break
+		}
 		return NewVarDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12616,10 +13046,10 @@ func (ps *Parser) varDecl() Node {
 
 /*
 var_spec_semi:
-| x=var_spec end_semi {x}
+| x=var_spec semi {x}
 */
 func (ps *Parser) varSpecSemi() Node {
-	/* x=var_spec end_semi {x}
+	/* x=var_spec semi {x}
 	 */
 	pos := ps._mark()
 	for {
@@ -12629,7 +13059,7 @@ func (ps *Parser) varSpecSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -12728,11 +13158,11 @@ func (ps *Parser) varIdent() Node {
 
 /*
 type_decl:
-| 'type' '(' x=type_spec_semi* ')' ';'? {type_decl(x)}
-| 'type' x=type_spec ';'? {type_decl([x])}
+| 'type' '(' x=type_spec_semi* ')' ';' {type_decl(x)}
+| 'type' x=type_spec ';' {type_decl([x])}
 */
 func (ps *Parser) typeDecl() Node {
-	/* 'type' '(' x=type_spec_semi* ')' ';'? {type_decl(x)}
+	/* 'type' '(' x=type_spec_semi* ')' ';' {type_decl(x)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12765,11 +13195,13 @@ func (ps *Parser) typeDecl() Node {
 		}
 		var _6 Node
 		_6 = ps._expectK(TokenTypeOpSemi)
-		_ = _6
+		if _6 == nil {
+			break
+		}
 		return NewTypeDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'type' x=type_spec ';'? {type_decl([x])}
+	/* 'type' x=type_spec ';' {type_decl([x])}
 	 */
 	for {
 		var x Node
@@ -12784,7 +13216,9 @@ func (ps *Parser) typeDecl() Node {
 		}
 		var _2 Node
 		_2 = ps._expectK(TokenTypeOpSemi)
-		_ = _2
+		if _2 == nil {
+			break
+		}
 		return NewTypeDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12793,10 +13227,10 @@ func (ps *Parser) typeDecl() Node {
 
 /*
 type_spec_semi:
-| x=type_spec end_semi {x}
+| x=type_spec semi {x}
 */
 func (ps *Parser) typeSpecSemi() Node {
-	/* x=type_spec end_semi {x}
+	/* x=type_spec semi {x}
 	 */
 	pos := ps._mark()
 	for {
@@ -12806,7 +13240,7 @@ func (ps *Parser) typeSpecSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -12864,26 +13298,6 @@ func (ps *Parser) typeSpec() Node {
 			break
 		}
 		return NewTypeSpecNode(ps._filePath, ps._fileContent, x, t, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-type_ident:
-| n=IDENT {type_ident(n)}
-*/
-func (ps *Parser) typeIdent() Node {
-	/* n=IDENT {type_ident(n)}
-	 */
-	pos := ps._mark()
-	for {
-		var n Node
-		n = ps._expectK(TokenTypeIdent)
-		if n == nil {
-			break
-		}
-		return NewTypeIdentNode(ps._filePath, ps._fileContent, n, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -13080,37 +13494,12 @@ func (ps *Parser) typeConstraint() Node {
 }
 
 /*
-method_spec:
-| x=IDENT y=signature {field([x],y,_)}
-*/
-func (ps *Parser) methodSpec() Node {
-	/* x=IDENT y=signature {field([x],y,_)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var y Node
-		x = ps._expectK(TokenTypeIdent)
-		if x == nil {
-			break
-		}
-		y = ps.signature()
-		if y == nil {
-			break
-		}
-		return NewFieldNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), y, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-end_semi:
+semi:
 | ';'
 | &')'
 | &'}'
 */
-func (ps *Parser) endSemi() Node {
+func (ps *Parser) semi() Node {
 	/* ';'
 	 */
 	for {
@@ -13212,10 +13601,10 @@ func (ps *Parser) statementSemiList() Node {
 
 /*
 statement_semi:
-| x=statement end_semi {x}
+| x=statement semi {x}
 */
 func (ps *Parser) statementSemi() Node {
-	/* x=statement end_semi {x}
+	/* x=statement semi {x}
 	 */
 	pos := ps._mark()
 	for {
@@ -13225,7 +13614,7 @@ func (ps *Parser) statementSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -15015,8 +15404,8 @@ type:
 | '*' x=type {star_expr(x)}
 | '[' ']' x=type {slice_type(x)}
 | '[' x=expression ']' y=type {array_type(x, y)}
-| 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
-| 'func' x=signature {x}
+| 'struct' '{' x=struct_field_semi* '}' {struct_type(x)}
+| 'func' '(' p=','.parameter* ','? ')' r=result_decl? {func_type(p, r)}
 | 'interface' b=interface_body {interface_type(b)}
 | map_type
 | channel_type
@@ -15111,7 +15500,7 @@ func (ps *Parser) type_() Node {
 		return NewArrayTypeNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
+	/* 'struct' '{' x=struct_field_semi* '}' {struct_type(x)}
 	 */
 	for {
 		var x Node
@@ -15141,23 +15530,57 @@ func (ps *Parser) type_() Node {
 		if _5 == nil {
 			break
 		}
-		return NewStructTypeNode(ps._filePath, ps._fileContent, s, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+		return NewStructTypeNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'func' x=signature {x}
+	/* 'func' '(' p=','.parameter* ','? ')' r=result_decl? {func_type(p, r)}
 	 */
 	for {
-		var x Node
+		var p Node
+		var r Node
 		var _1 Node
 		_1 = ps._expectK(TokenTypeKwFunc)
 		if _1 == nil {
 			break
 		}
-		x = ps.signature()
-		if x == nil {
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftParen)
+		if _2 == nil {
 			break
 		}
-		return x
+		_3 := make([]Node, 0)
+		var _4 Node
+		var _5 Node
+		_4 = ps.parameter()
+		if _4 != nil {
+			_3 = append(_3, _4)
+			for {
+				_p := ps._mark()
+				_5 = ps._expectK(TokenTypeOpComma)
+				if _5 == nil {
+					break
+				}
+				_4 = ps.parameter()
+				if _4 == nil {
+					ps._reset(_p)
+					break
+				}
+				_3 = append(_3, _4)
+			}
+		}
+		p = NewNodesNode(_3)
+		_ = p
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpComma)
+		_ = _6
+		var _7 Node
+		_7 = ps._expectK(TokenTypeOpRightParen)
+		if _7 == nil {
+			break
+		}
+		r = ps.resultDecl()
+		_ = r
+		return NewFuncTypeNode(ps._filePath, ps._fileContent, p, r, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	/* 'interface' b=interface_body {interface_type(b)}
@@ -15355,10 +15778,10 @@ func (ps *Parser) interfaceBody() Node {
 
 /*
 struct_field_semi:
-| x=struct_field end_semi {x}
+| x=struct_field semi {x}
 */
 func (ps *Parser) structFieldSemi() Node {
-	/* x=struct_field end_semi {x}
+	/* x=struct_field semi {x}
 	 */
 	pos := ps._mark()
 	for {
@@ -15368,7 +15791,7 @@ func (ps *Parser) structFieldSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -15482,7 +15905,7 @@ func (ps *Parser) tag() Node {
 method_spec_and_interface_type_name_semi:
 | method_spec_semi
 | interface_type_name_semi
-| '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
+| '|'.('~'? t=type {t})+ semi {field(_,_,_)}
 _group_7 <-- ('~'? t=type {t})
 */
 func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
@@ -15506,7 +15929,7 @@ func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 		}
 		return _1
 	}
-	/* '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
+	/* '|'.('~'? t=type {t})+ semi {field(_,_,_)}
 	 */
 	pos := ps._mark()
 	for {
@@ -15534,7 +15957,7 @@ func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 		_1 = NewNodesNode(_2)
 		_ = _1
 		var _5 Node
-		_5 = ps.endSemi()
+		_5 = ps.semi()
 		if _5 == nil {
 			break
 		}
@@ -15546,20 +15969,20 @@ func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 
 /*
 method_spec_semi:
-| x=method_spec end_semi {x}
+| x=method_field semi {x}
 */
 func (ps *Parser) methodSpecSemi() Node {
-	/* x=method_spec end_semi {x}
+	/* x=method_field semi {x}
 	 */
 	pos := ps._mark()
 	for {
 		var x Node
-		x = ps.methodSpec()
+		x = ps.methodField()
 		if x == nil {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -15570,11 +15993,70 @@ func (ps *Parser) methodSpecSemi() Node {
 }
 
 /*
+method_field:
+| x=IDENT '(' p=','.parameter* ','? ')' r=result_decl? {method_field(x, p, r)}
+*/
+func (ps *Parser) methodField() Node {
+	/* x=IDENT '(' p=','.parameter* ','? ')' r=result_decl? {method_field(x, p, r)}
+	 */
+	pos := ps._mark()
+	for {
+		var p Node
+		var r Node
+		var x Node
+		x = ps._expectK(TokenTypeIdent)
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftParen)
+		if _1 == nil {
+			break
+		}
+		_2 := make([]Node, 0)
+		var _3 Node
+		var _4 Node
+		_3 = ps.parameter()
+		if _3 != nil {
+			_2 = append(_2, _3)
+			for {
+				_p := ps._mark()
+				_4 = ps._expectK(TokenTypeOpComma)
+				if _4 == nil {
+					break
+				}
+				_3 = ps.parameter()
+				if _3 == nil {
+					ps._reset(_p)
+					break
+				}
+				_2 = append(_2, _3)
+			}
+		}
+		p = NewNodesNode(_2)
+		_ = p
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpComma)
+		_ = _5
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpRightParen)
+		if _6 == nil {
+			break
+		}
+		r = ps.resultDecl()
+		_ = r
+		return NewMethodFieldNode(ps._filePath, ps._fileContent, x, p, r, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
 interface_type_name_semi:
-| x=type_name end_semi {field(_,x,_)}
+| x=type_name semi {field(_,x,_)}
 */
 func (ps *Parser) interfaceTypeNameSemi() Node {
-	/* x=type_name end_semi {field(_,x,_)}
+	/* x=type_name semi {field(_,x,_)}
 	 */
 	pos := ps._mark()
 	for {
@@ -15584,7 +16066,7 @@ func (ps *Parser) interfaceTypeNameSemi() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}
@@ -16045,7 +16527,7 @@ primary_expr:
 | x=STRING {basic_lit(x)}
 | x=literal_type '{' y=','.keyed_element* ','? '}' {composite_lit(x, y)}
 | _hack_composite_lit_node
-| 'func' x=signature y=block {func_lit(x,y)}
+| 'func' '(' p=','.parameter* ','? ')' r=result_decl? y=block {func_lit(p, r, y)}
 | x=type '.' y=IDENT {selector_expr(x,y)}
 | i=IDENT {ident(i)}
 */
@@ -16274,25 +16756,59 @@ func (ps *Parser) primaryExprLeftMost() Node {
 		}
 		return _1
 	}
-	/* 'func' x=signature y=block {func_lit(x,y)}
+	/* 'func' '(' p=','.parameter* ','? ')' r=result_decl? y=block {func_lit(p, r, y)}
 	 */
 	for {
-		var x Node
+		var p Node
+		var r Node
 		var y Node
 		var _1 Node
 		_1 = ps._expectK(TokenTypeKwFunc)
 		if _1 == nil {
 			break
 		}
-		x = ps.signature()
-		if x == nil {
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftParen)
+		if _2 == nil {
 			break
 		}
+		_3 := make([]Node, 0)
+		var _4 Node
+		var _5 Node
+		_4 = ps.parameter()
+		if _4 != nil {
+			_3 = append(_3, _4)
+			for {
+				_p := ps._mark()
+				_5 = ps._expectK(TokenTypeOpComma)
+				if _5 == nil {
+					break
+				}
+				_4 = ps.parameter()
+				if _4 == nil {
+					ps._reset(_p)
+					break
+				}
+				_3 = append(_3, _4)
+			}
+		}
+		p = NewNodesNode(_3)
+		_ = p
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpComma)
+		_ = _6
+		var _7 Node
+		_7 = ps._expectK(TokenTypeOpRightParen)
+		if _7 == nil {
+			break
+		}
+		r = ps.resultDecl()
+		_ = r
 		y = ps.block()
 		if y == nil {
 			break
 		}
-		return NewFuncLitNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+		return NewFuncLitNode(ps._filePath, ps._fileContent, p, r, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	/* x=type '.' y=IDENT {selector_expr(x,y)}
@@ -17163,10 +17679,10 @@ func (ps *Parser) _group1() Node {
 
 /*
 _group_2:
-| t=import_spec end_semi {t}
+| t=import_spec semi {t}
 */
 func (ps *Parser) _group2() Node {
-	/* t=import_spec end_semi {t}
+	/* t=import_spec semi {t}
 	 */
 	pos := ps._mark()
 	for {
@@ -17176,7 +17692,7 @@ func (ps *Parser) _group2() Node {
 			break
 		}
 		var _1 Node
-		_1 = ps.endSemi()
+		_1 = ps.semi()
 		if _1 == nil {
 			break
 		}

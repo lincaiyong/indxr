@@ -1,0 +1,7 @@
+file                <package imports declarations>
+
+dot_import          <path>
+alias_import        <alias path>
+import              <path>
+
+function_decl       <name generic_parameters parameters results body>

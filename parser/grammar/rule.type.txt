@@ -3,35 +3,25 @@ type:
     | '*' x=type {star_expr(x)}
     | '[' ']' x=type {slice_type(x)}
     | '[' x=expression ']' y=type {array_type(x, y)}
-    | 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
-    | 'func' x=signature {x}
-    | 'interface' b=interface_body {interface_type(b)}
-    | map_type
-    | channel_type
-    | x=(qualified_type_ident | type_ident) '[' s=','.type+ ','? ']' {generic_type_instantiation(x, s)}
-    | qualified_type_ident
-    | type_ident
-qualified_type_ident: x=IDENT '.' y=IDENT {qualified_type_ident(x, y)}
-type_ident: x=IDENT {type_ident(x)}
-interface_body: '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
+    | 'struct' '{' x=struct_field* '}' {struct_type(x)}
+    | 'func' '(' p=','.parameter* ','? ')' r=result_decl? {func_type(p, r)}
+    | 'interface' '{' x=interface_field* '}' {interface_type(x)}
+    | 'map' '[' x=type ']' y=type {map_type(x, y)}
+    | 'chan' '<-' t=type {send_only_chan_type(t)}
+    | '<-' 'chan' t=type {recv_only_chan_type(t)}
+    | 'chan' t=type {bidirectional_chan_type(t)}
+    | x=type_identifier '[' s=','.type+ ','? ']' {generic_type(x, s)}
+    | type_identifier
+type_identifier: type_qualified_name | type_name
+type_qualified_name: x=IDENT '.' y=IDENT {type_qualified_name(x, y)}
+type_name: x=IDENT {type_name(x)}
 
-struct_field_semi: x=struct_field end_semi {x}
 struct_field:
-    | x=struct_field_ident y=type z=tag? {field(x,y,z)}
-    | x=embedded_field y=tag? {field(_,x,y)}
-embedded_field:
-    | '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
-    | t=type_name_or_generic_type_instantiation {t}
-tag: x=STRING {basic_lit(x)}
+    | x=IDENT y=type? z=STRING? semi_comma {struct_field(x, y, z)}
+    | star='*'? x=(type_qualified_name | type_name) '[' s=','.type+ ','? ']' y=STRING? semi_comma {struct_embed_field(star, x, s, y)}
+semi_comma: ',' | semi
 
-method_spec_and_interface_type_name_semi:
-    | method_spec_semi
-    | interface_type_name_semi
-    | '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
-method_spec_semi: x=method_spec end_semi {x}
-interface_type_name_semi: x=type_name end_semi {field(_,x,_)}
-
-channel_type:
-    | t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
-
-map_type: 'map' '[' x=type ']' y=type {map_type(x,y)}
+interface_field:
+    | x=type_name semi {interface_embed_field(x)}
+    | x=IDENT '(' p=','.parameter* ','? ')' r=result_decl? semi {interface_method_field(x, p, r)}
+    | x='|'.type_constraint+ semi {interface_type_constraint(x)}

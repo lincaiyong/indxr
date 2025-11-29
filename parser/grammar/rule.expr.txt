@@ -35,7 +35,7 @@ primary_expr:
     | x=STRING {basic_lit(x)}
     | x=literal_type '{' y=','.keyed_element* ','? '}' {composite_lit(x, y)}
     | _hack_composite_lit_node
-    | 'func' x=signature y=block {func_lit(x,y)}
+    | 'func' '(' p=','.parameter* ','? ')' r=result_decl? y=block {func_lit(p, r, y)}
     | x=type '.' y=IDENT {selector_expr(x,y)}
     | i=IDENT {ident(i)}
 make_ident: x='make' {ident(x)}

@@ -1,7 +1,7 @@
 block: '{' x=statement_semi_list? '}' {block_stmt(x)}
 
 statement_semi_list: statement_semi+
-statement_semi: x=statement end_semi {x}
+statement_semi: x=statement semi {x}
 statement:
     | var_decl
     | const_decl
