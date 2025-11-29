@@ -1,0 +1,86 @@
+block: '{' x=statement_semi_list? '}' {block_stmt(x)}
+
+statement_semi_list: statement_semi+
+statement_semi: x=statement end_semi {x}
+statement:
+    | var_decl
+    | const_decl
+    | type_decl
+    | labeled_stmt
+    | simple_stmt
+    | if_stmt
+    | type_switch_stmt
+    | expr_switch_stmt
+    | 'select' b=select_body {select_stmt(b)}
+    | for_stmt
+    | 'go' x=expression {go_stmt(x)}
+    | 'return' x=expression_list? {return_stmt(x)}
+    | x='break' y=IDENT? {branch_stmt(x,y)}
+    | x='continue' y=IDENT? {branch_stmt(x,y)}
+    | x='goto' y=IDENT {branch_stmt(x,y)}
+    | x='fallthrough' {branch_stmt(x,_)}
+    | 'defer' x=expression {defer_stmt(x)}
+    | block
+
+select_body: '{' cases=common_clause* '}' {block_stmt(cases)}
+
+for_stmt:
+    | 'for' [ c=expression? ] b=block {for_stmt(_,c,_,b)}
+    | 'for' [ i=simple_stmt? ';' c=expression? ';' post=simple_stmt? ] b=block {for_stmt(i,c,post,b)}
+    | 'for' [ 'range' x=expression ] b=block {range_stmt(_,_,x,b,_)}
+    | 'for' [ k=expression ',' v=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,v,x,b,tok)}
+    | 'for' [ k=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,_,x,b,tok)}
+
+common_clause:
+    | 'case' x=send_stmt ':' y=statement_semi_list? {common_clause(x,y)}
+    | 'case' x=recv_stmt ':' y=statement_semi_list? {common_clause(x,y)}
+    | 'default' ':' x=statement_semi_list? {common_clause(_,x)}
+recv_stmt:
+    | x=expression_list op='=' y=expression {assign_stmt(x, op, [y])}
+    | x=identifier_list op=':=' y=expression {assign_stmt(x, op, [y])}
+    | x=expression {expr_stmt(x)}
+
+type_switch_body: '{' cases=type_case_clause* '}' {block_stmt(cases)}
+type_switch_stmt:
+    | 'switch' [ (init=simple_stmt ';')? assign=type_switch_guard ] b=type_switch_body {type_switch_stmt(init,assign,b)}
+
+type_assert_expr: r=primary_expr '.' '(' 'type' ')' {type_assert_expr(r,_)}
+type_switch_guard:
+    | l=IDENT op=':=' t=type_assert_expr {assign_stmt([l], op, [t])}
+    | t=type_assert_expr {expr_stmt(t)}
+type_case_clause:
+    | 'case' x=','.type+ ':' y=statement_semi_list? {case_clause(x,y)}
+    | 'default' ':' x=statement_semi_list? {case_clause(_,x)}
+
+expr_switch_body: '{' cases=expr_case_clause* '}' {block_stmt(cases)}
+expr_switch_stmt:
+    | 'switch' [ (init=simple_stmt ';')? tag=expression? ]  b=expr_switch_body {switch_stmt(init,tag,b)}
+expr_case_clause:
+    | 'case' x=expression_list ':' y=statement_semi_list? {case_clause(x,y)}
+    | 'default' ':' x=statement_semi_list? {case_clause(_,x)}
+
+if_stmt:
+    | 'if' [ (init=simple_stmt ';')? cond=expression ] body=block 'else' else_=if_stmt {if_stmt(init, cond, body, else_)}
+    | 'if' [ (init=simple_stmt ';')? cond=expression ] body=block 'else' else_=block {if_stmt(init, cond, body, else_)}
+    | 'if' [ init=simple_stmt ';' cond=expression ] body=block {if_stmt(init, cond, body, _)}
+    | 'if' [ cond=expression ] body=block {if_stmt(_, cond, body, _)}
+
+simple_stmt: assignment | short_val_decl | inc_dec_stmt | send_stmt | expression_stmt
+
+expression_stmt: x=expression {expr_stmt(x)}
+
+send_stmt: x=expression '<-' y=expression {send_stmt(x,y)}
+inc_dec_stmt: x=expression y=('++'|'--') {inc_dec_stmt(x,y)}
+assignment: l=expression_list op=assign_op r=expression_list {assign_stmt(l, op, r)}
+assign_op: '=' | '+=' | '-=' | '|=' | '^=' | '*=' | '/=' | '%=' | '<<=' | '>>=' | '&=' | '&^='
+
+short_val_decl: l=identifier_list op=':=' r=expression_list {assign_stmt(l, op, r)}
+empty_block: '{' '}' {block_stmt(_)}
+labeled_stmt:
+    | x=IDENT ':' b=empty_block {labeled_stmt(x,b)}
+    | x=IDENT ':' y=statement {labeled_stmt(x,y)}
+    | x=IDENT ':' {labeled_stmt(x,_)}
+
+
+identifier_list: x=','.IDENT+ {x}
+expression_list: ','.expression+
