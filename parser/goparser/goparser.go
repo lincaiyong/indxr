@@ -11588,10 +11588,11 @@ func (ps *Parser) Parse() (ret Node, err error) {
 
 /*
 file:
-| n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+| n=package_decl i=import_decl* t=(function_decl | method_decl | const_decl | var_decl | type_decl)* END_OF_FILE {file(n, i, t)}
+_group_1 <-- (function_decl | method_decl | const_decl | var_decl | type_decl)
 */
 func (ps *Parser) file() Node {
-	/* n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+	/* n=package_decl i=import_decl* t=(function_decl | method_decl | const_decl | var_decl | type_decl)* END_OF_FILE {file(n, i, t)}
 	 */
 	pos := ps._mark()
 	for {
@@ -11616,7 +11617,7 @@ func (ps *Parser) file() Node {
 		_3 := make([]Node, 0)
 		var _4 Node
 		for {
-			_4 = ps.topLevelDeclSemi()
+			_4 = ps._group1()
 			if _4 == nil {
 				break
 			}
@@ -11689,7 +11690,7 @@ func (ps *Parser) packageIdent() Node {
 import_decl:
 | 'import' '(' specs=(t=import_spec end_semi {t})* ')' ';'? {import_decl(specs)}
 | 'import' specs=import_spec ';'? {import_decl([specs])}
-_group_1 <-- (t=import_spec end_semi {t})
+_group_2 <-- (t=import_spec end_semi {t})
 */
 func (ps *Parser) importDecl() Node {
 	/* 'import' '(' specs=(t=import_spec end_semi {t})* ')' ';'? {import_decl(specs)}
@@ -11710,7 +11711,7 @@ func (ps *Parser) importDecl() Node {
 		_3 := make([]Node, 0)
 		var _4 Node
 		for {
-			_4 = ps._group1()
+			_4 = ps._group2()
 			if _4 == nil {
 				break
 			}
@@ -11754,7 +11755,7 @@ func (ps *Parser) importDecl() Node {
 /*
 import_spec:
 | name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
-_group_2 <-- (import_dot | import_ident)
+_group_3 <-- (import_dot | import_ident)
 */
 func (ps *Parser) importSpec() Node {
 	/* name=(import_dot | import_ident)? path=import_path {import_spec(name, path)}
@@ -11763,7 +11764,7 @@ func (ps *Parser) importSpec() Node {
 	for {
 		var name Node
 		var path Node
-		name = ps._group2()
+		name = ps._group3()
 		_ = name
 		path = ps.importPath()
 		if path == nil {
@@ -11836,96 +11837,11 @@ func (ps *Parser) importPath() Node {
 }
 
 /*
-top_level_decl_semi:
-| t=top_level_decl ';'? {t}
-*/
-func (ps *Parser) topLevelDeclSemi() Node {
-	/* t=top_level_decl ';'? {t}
-	 */
-	pos := ps._mark()
-	for {
-		var t Node
-		t = ps.topLevelDecl()
-		if t == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpSemi)
-		_ = _1
-		return t
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-top_level_decl:
-| function_decl
-| method_decl
-| const_decl
-| var_decl
-| type_decl
-*/
-func (ps *Parser) topLevelDecl() Node {
-	/* function_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps.functionDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* method_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps.methodDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* const_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps.constDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* var_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps.varDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* type_decl
-	 */
-	for {
-		var _1 Node
-		_1 = ps.typeDecl()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
 function_decl:
-| 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? {function_decl(n, t, p, r, b)}
+| 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';'? {function_decl(n, t, p, r, b)}
 */
 func (ps *Parser) functionDecl() Node {
-	/* 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? {function_decl(n, t, p, r, b)}
+	/* 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';'? {function_decl(n, t, p, r, b)}
 	 */
 	pos := ps._mark()
 	for {
@@ -11984,6 +11900,9 @@ func (ps *Parser) functionDecl() Node {
 		_ = r
 		b = ps.block()
 		_ = b
+		var _8 Node
+		_8 = ps._expectK(TokenTypeOpSemi)
+		_ = _8
 		return NewFunctionDeclNode(ps._filePath, ps._fileContent, n, t, p, r, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12214,10 +12133,10 @@ func (ps *Parser) resultIdent() Node {
 
 /*
 method_decl:
-| 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? {method_decl(rc, n, p, rs, b)}
+| 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';'? {method_decl(rc, n, p, rs, b)}
 */
 func (ps *Parser) methodDecl() Node {
-	/* 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? {method_decl(rc, n, p, rs, b)}
+	/* 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';'? {method_decl(rc, n, p, rs, b)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12288,6 +12207,9 @@ func (ps *Parser) methodDecl() Node {
 		_ = rs
 		b = ps.block()
 		_ = b
+		var _10 Node
+		_10 = ps._expectK(TokenTypeOpSemi)
+		_ = _10
 		return NewMethodDeclNode(ps._filePath, ps._fileContent, rc, n, p, rs, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12452,11 +12374,11 @@ func (ps *Parser) receiverGenericTypeIdent() Node {
 
 /*
 const_decl:
-| 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
-| 'const' c=const_spec {const_decl([c])}
+| 'const' '(' c=const_spec_semi* ')' ';'? {const_decl(c)}
+| 'const' c=const_spec ';'? {const_decl([c])}
 */
 func (ps *Parser) constDecl() Node {
-	/* 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
+	/* 'const' '(' c=const_spec_semi* ')' ';'? {const_decl(c)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12487,10 +12409,13 @@ func (ps *Parser) constDecl() Node {
 		if _5 == nil {
 			break
 		}
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpSemi)
+		_ = _6
 		return NewConstDeclNode(ps._filePath, ps._fileContent, c, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'const' c=const_spec {const_decl([c])}
+	/* 'const' c=const_spec ';'? {const_decl([c])}
 	 */
 	for {
 		var c Node
@@ -12503,6 +12428,9 @@ func (ps *Parser) constDecl() Node {
 		if c == nil {
 			break
 		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpSemi)
+		_ = _2
 		return NewConstDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{c}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12623,11 +12551,11 @@ func (ps *Parser) constIdent() Node {
 
 /*
 var_decl:
-| 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
-| 'var' x=var_spec {var_decl([x])}
+| 'var' '(' x=var_spec_semi* ')' ';'? {var_decl(x)}
+| 'var' x=var_spec ';'? {var_decl([x])}
 */
 func (ps *Parser) varDecl() Node {
-	/* 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
+	/* 'var' '(' x=var_spec_semi* ')' ';'? {var_decl(x)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12658,10 +12586,13 @@ func (ps *Parser) varDecl() Node {
 		if _5 == nil {
 			break
 		}
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpSemi)
+		_ = _6
 		return NewVarDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'var' x=var_spec {var_decl([x])}
+	/* 'var' x=var_spec ';'? {var_decl([x])}
 	 */
 	for {
 		var x Node
@@ -12674,6 +12605,9 @@ func (ps *Parser) varDecl() Node {
 		if x == nil {
 			break
 		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpSemi)
+		_ = _2
 		return NewVarDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -12794,11 +12728,11 @@ func (ps *Parser) varIdent() Node {
 
 /*
 type_decl:
-| 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
-| 'type' x=type_spec {type_decl([x])}
+| 'type' '(' x=type_spec_semi* ')' ';'? {type_decl(x)}
+| 'type' x=type_spec ';'? {type_decl([x])}
 */
 func (ps *Parser) typeDecl() Node {
-	/* 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
+	/* 'type' '(' x=type_spec_semi* ')' ';'? {type_decl(x)}
 	 */
 	pos := ps._mark()
 	for {
@@ -12829,10 +12763,13 @@ func (ps *Parser) typeDecl() Node {
 		if _5 == nil {
 			break
 		}
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpSemi)
+		_ = _6
 		return NewTypeDeclNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	/* 'type' x=type_spec {type_decl([x])}
+	/* 'type' x=type_spec ';'? {type_decl([x])}
 	 */
 	for {
 		var x Node
@@ -12845,6 +12782,9 @@ func (ps *Parser) typeDecl() Node {
 		if x == nil {
 			break
 		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpSemi)
+		_ = _2
 		return NewTypeDeclNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
@@ -13582,8 +13522,8 @@ for_stmt:
 | 'for' [ 'range' x=expression ] b=block {range_stmt(_,_,x,b,_)}
 | 'for' [ k=expression ',' v=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,v,x,b,tok)}
 | 'for' [ k=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,_,x,b,tok)}
-_group_3 <-- (':='|'=')
-_group_3 <-- (':='|'=')
+_group_4 <-- (':='|'=')
+_group_4 <-- (':='|'=')
 */
 func (ps *Parser) forStmt() Node {
 	/* 'for' [ c=expression? ] b=block {for_stmt(_,c,_,b)}
@@ -13726,7 +13666,7 @@ func (ps *Parser) forStmt() Node {
 			if v == nil {
 				break
 			}
-			tok = ps._group3()
+			tok = ps._group4()
 			if tok == nil {
 				break
 			}
@@ -13772,7 +13712,7 @@ func (ps *Parser) forStmt() Node {
 			if k == nil {
 				break
 			}
-			tok = ps._group3()
+			tok = ps._group4()
 			if tok == nil {
 				break
 			}
@@ -14679,7 +14619,7 @@ func (ps *Parser) sendStmt() Node {
 /*
 inc_dec_stmt:
 | x=expression y=('++'|'--') {inc_dec_stmt(x,y)}
-_group_4 <-- ('++'|'--')
+_group_5 <-- ('++'|'--')
 */
 func (ps *Parser) incDecStmt() Node {
 	/* x=expression y=('++'|'--') {inc_dec_stmt(x,y)}
@@ -14692,7 +14632,7 @@ func (ps *Parser) incDecStmt() Node {
 		if x == nil {
 			break
 		}
-		y = ps._group4()
+		y = ps._group5()
 		if y == nil {
 			break
 		}
@@ -15083,7 +15023,7 @@ type:
 | x=(qualified_type_ident | type_ident) '[' s=','.type+ ','? ']' {generic_type_instantiation(x, s)}
 | qualified_type_ident
 | type_ident
-_group_5 <-- (qualified_type_ident | type_ident)
+_group_6 <-- (qualified_type_ident | type_ident)
 */
 func (ps *Parser) type_() Node {
 	/* '(' x=type ')' {paren_type(x)}
@@ -15261,7 +15201,7 @@ func (ps *Parser) type_() Node {
 	for {
 		var s Node
 		var x Node
-		x = ps._group5()
+		x = ps._group6()
 		if x == nil {
 			break
 		}
@@ -15543,7 +15483,7 @@ method_spec_and_interface_type_name_semi:
 | method_spec_semi
 | interface_type_name_semi
 | '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
-_group_6 <-- ('~'? t=type {t})
+_group_7 <-- ('~'? t=type {t})
 */
 func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 	/* method_spec_semi
@@ -15573,7 +15513,7 @@ func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 		var _1 Node
 		_2 := make([]Node, 0)
 		var _3, _4 Node
-		_3 = ps._group6()
+		_3 = ps._group7()
 		if _3 == nil {
 			break
 		}
@@ -15584,7 +15524,7 @@ func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
 			if _4 == nil {
 				break
 			}
-			_3 = ps._group6()
+			_3 = ps._group7()
 			if _3 == nil {
 				ps._reset(_p)
 				break
@@ -15657,7 +15597,7 @@ func (ps *Parser) interfaceTypeNameSemi() Node {
 /*
 channel_type:
 | t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
-_group_7 <-- (a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan')
+_group_8 <-- (a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan')
 */
 func (ps *Parser) channelType() Node {
 	/* t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
@@ -15666,7 +15606,7 @@ func (ps *Parser) channelType() Node {
 	for {
 		var t Node
 		var x Node
-		t = ps._group7()
+		t = ps._group8()
 		if t == nil {
 			break
 		}
@@ -17161,9 +17101,71 @@ func (ps *Parser) arrayType() Node {
 
 /*
 _group_1:
-| t=import_spec end_semi {t}
+| function_decl
+| method_decl
+| const_decl
+| var_decl
+| type_decl
 */
 func (ps *Parser) _group1() Node {
+	/* function_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.functionDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* method_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.methodDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* const_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.constDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* var_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.varDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* type_decl
+	 */
+	for {
+		var _1 Node
+		_1 = ps.typeDecl()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	return nil
+}
+
+/*
+_group_2:
+| t=import_spec end_semi {t}
+*/
+func (ps *Parser) _group2() Node {
 	/* t=import_spec end_semi {t}
 	 */
 	pos := ps._mark()
@@ -17185,11 +17187,11 @@ func (ps *Parser) _group1() Node {
 }
 
 /*
-_group_2:
+_group_3:
 | import_dot
 | import_ident
 */
-func (ps *Parser) _group2() Node {
+func (ps *Parser) _group3() Node {
 	/* import_dot
 	 */
 	for {
@@ -17214,11 +17216,11 @@ func (ps *Parser) _group2() Node {
 }
 
 /*
-_group_3:
+_group_4:
 | ':='
 | '='
 */
-func (ps *Parser) _group3() Node {
+func (ps *Parser) _group4() Node {
 	/* ':='
 	 */
 	for {
@@ -17243,11 +17245,11 @@ func (ps *Parser) _group3() Node {
 }
 
 /*
-_group_4:
+_group_5:
 | '++'
 | '--'
 */
-func (ps *Parser) _group4() Node {
+func (ps *Parser) _group5() Node {
 	/* '++'
 	 */
 	for {
@@ -17272,11 +17274,11 @@ func (ps *Parser) _group4() Node {
 }
 
 /*
-_group_5:
+_group_6:
 | qualified_type_ident
 | type_ident
 */
-func (ps *Parser) _group5() Node {
+func (ps *Parser) _group6() Node {
 	/* qualified_type_ident
 	 */
 	for {
@@ -17301,10 +17303,10 @@ func (ps *Parser) _group5() Node {
 }
 
 /*
-_group_6:
+_group_7:
 | '~'? t=type {t}
 */
-func (ps *Parser) _group6() Node {
+func (ps *Parser) _group7() Node {
 	/* '~'? t=type {t}
 	 */
 	pos := ps._mark()
@@ -17324,12 +17326,12 @@ func (ps *Parser) _group6() Node {
 }
 
 /*
-_group_7:
+_group_8:
 | a='chan' b='<-' {_pseudo_token(a, b)}
 | a='<-' b='chan' {_pseudo_token(a, b)}
 | 'chan'
 */
-func (ps *Parser) _group7() Node {
+func (ps *Parser) _group8() Node {
 	/* a='chan' b='<-' {_pseudo_token(a, b)}
 	 */
 	pos := ps._mark()
@@ -17380,46 +17382,21 @@ func (tk *Tokenizer) Clean(tokens []*Token) []*Token {
 	ret := make([]*Token, 0)
 	var last *Token
 	for _, tok := range tokens {
-		// insert optional semicolon
-		// The formal grammar uses semicolons ";" as terminators in a number of productions. Go programs may omit most of these semicolons using the following two rules:
-		//
-		// When the input is broken into tokens, a semicolon is automatically inserted into the token stream immediately after a line's final token if that token is
-		// an identifier
-		// an integer, floating-point, imaginary, rune, or string literal
-		// one of the keywords break, continue, fallthrough, or return
-		// one of the operators and punctuation ++, --, ), ], or }
-		// To allow complex statements to occupy a single line, a semicolon may be omitted before a closing ")" or "}".
 		if tok.Kind == TokenTypeNewline {
 			if last != nil && last.Kind != TokenTypeOpSemi {
 				insertSemi := false
 				switch last.Kind {
-				case TokenTypeIdent:
-					insertSemi = true
-				case TokenTypeString:
-					insertSemi = true
-				case TokenTypeOpRightParen, TokenTypeOpRightBracket, TokenTypeOpRightBrace:
-					// ),],}
-					insertSemi = true
-				case TokenTypeOpPlusPlus, TokenTypeOpMinusMinus:
-					// ++,--
-					insertSemi = true
-				case TokenTypeNumber:
-					insertSemi = true
-				case TokenTypeKwFallthrough, TokenTypeKwReturn, TokenTypeKwBreak, TokenTypeKwContinue:
-					insertSemi = true
-				}
-
-				if insertSemi {
+				// ident, number, string, ), ], }, ++, --, fallthrough, break, return, continue
+				case TokenTypeIdent, TokenTypeString, TokenTypeOpRightParen, TokenTypeOpRightBracket,
+				    TokenTypeOpRightBrace, TokenTypeOpPlusPlus, TokenTypeOpMinusMinus, TokenTypeNumber:
 					last = NewToken(TokenTypeOpSemi, last.Start, last.End, []rune(";"))
 					ret = append(ret, last)
 				}
 			}
 		}
-
 		if tok.Kind == TokenTypeWhitespace || tok.Kind == TokenTypeNewline || tok.Kind == TokenTypeComment {
 			continue
 		}
-
 		ret = append(ret, tok)
 		last = tok
 		if tok.Kind == TokenTypeEndOfFile {
@@ -17429,27 +17406,16 @@ func (tk *Tokenizer) Clean(tokens []*Token) []*Token {
 	return ret
 }
 
-type Any struct {
-    depth int
-}
-
-func (ps *Parser) _getAny() *Any {
-    if ps._any == nil {
-        ps._any = &Any{}
-    }
-    return ps._any.(*Any)
-}
-
 func (ps *Parser) _enter() {
-	ps._getAny().depth = ps._bracketDepth + 1
+	ps._any = ps._bracketDepth + 1
 }
 
 func (ps *Parser) _leave() {
-	ps._getAny().depth = 0
+	ps.any = 0
 }
 
 func (ps *Parser) _hackCompositeLitNode() Node {
-	if ps._bracketDepth >= ps._getAny().depth {
+	if ps._bracketDepth >= ps._any.(int) {
 		return ps.compositeLit()
 	}
 	return nil

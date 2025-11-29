@@ -1,6 +1,5 @@
-# FILE ################################
-
-file: n=package_decl i=import_decl* t=top_level_decl_semi* END_OF_FILE {file(n, i, t)}
+# 文件是包名，import，文件级声明
+file: n=package_decl i=import_decl* t=(function_decl | method_decl | const_decl | var_decl | type_decl)* END_OF_FILE {file(n, i, t)}
 
 # PACKAGE DECLARATION #################
 
@@ -17,14 +16,9 @@ import_dot: d='.' {import_dot(d)}
 import_ident: n=IDENT {import_ident(n)}
 import_path: s=STRING {import_path(s)}
 
-# TOP LEVEL DECLARATION ###############
-
-top_level_decl_semi: t=top_level_decl ';'? {t}
-top_level_decl: function_decl | method_decl | const_decl | var_decl | type_decl
-
 # FUNCTION DECLARATION ################
 
-function_decl: 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? {function_decl(n, t, p, r, b)}
+function_decl: 'func' n=func_ident t=generic_parameter_decl? '(' p=','.parameter* ','? ')' r=result_decl? b=block? ';'? {function_decl(n, t, p, r, b)}
 func_ident: n=IDENT {func_ident(n)}
 parameter:
     | n=parameter_ident '...' t=type {ellipsis_parameter(n, t)}
@@ -41,7 +35,7 @@ result_ident: n=IDENT {result_ident(n)}
 
 # METHOD DECLARATION ##################
 
-method_decl: 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? {method_decl(rc, n, p, rs, b)}
+method_decl: 'func' '(' rc=receiver ')' n=method_ident '(' p=','.parameter* ','? ')' rs=result_decl? b=block? ';'? {method_decl(rc, n, p, rs, b)}
 method_ident: n=IDENT {method_ident(n)}
 receiver: n=receiver_ident? star='*'? t=receiver_type_ident ('[' g=','.receiver_generic_type_ident+ ','? ']')? {receiver(n, star, t, g)}
 receiver_ident: n=IDENT {receiver_ident(n)}
@@ -51,8 +45,8 @@ receiver_generic_type_ident: n=IDENT {receiver_generic_type_ident(n)}
 # CONST DECLARATION ###################
 
 const_decl:
-    | 'const' '(' c=const_spec_semi* ')' {const_decl(c)}
-    | 'const' c=const_spec {const_decl([c])}
+    | 'const' '(' c=const_spec_semi* ')' ';'? {const_decl(c)}
+    | 'const' c=const_spec ';'? {const_decl([c])}
 const_spec_semi: c=const_spec end_semi {c}
 const_spec: i=','.const_ident+ (t=type? '=' e=expression_list)? {const_spec(i, t, e)}
 const_ident: n=IDENT {const_ident(n)}
@@ -60,8 +54,8 @@ const_ident: n=IDENT {const_ident(n)}
 # VAR DECLARATION #####################
 
 var_decl:
-    | 'var' '(' x=var_spec_semi* ')' {var_decl(x)}
-    | 'var' x=var_spec {var_decl([x])}
+    | 'var' '(' x=var_spec_semi* ')' ';'? {var_decl(x)}
+    | 'var' x=var_spec ';'? {var_decl([x])}
 var_spec_semi: x=var_spec end_semi {x}
 var_spec: i=','.var_ident+  (t=type? '=' e=expression_list)? {var_spec(i, t, e)}
 var_ident: n=IDENT {var_ident(n)}
@@ -69,8 +63,8 @@ var_ident: n=IDENT {var_ident(n)}
 # TYPE DECLARATION ####################
 
 type_decl:
-    | 'type' '(' x=type_spec_semi* ')' {type_decl(x)}
-    | 'type' x=type_spec {type_decl([x])}
+    | 'type' '(' x=type_spec_semi* ')' ';'? {type_decl(x)}
+    | 'type' x=type_spec ';'? {type_decl([x])}
 type_spec_semi: x=type_spec end_semi {x}
 type_spec:
     | x=type_ident t=generic_parameter_decl? '=' y=type {type_eq_spec(x, t, y)}
