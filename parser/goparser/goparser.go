@@ -190,6 +190,7 @@ const NodeTypeStarExpr = "star_expr"
 const NodeTypeTypeAssertExpr = "type_assert_expr"
 const NodeTypeSliceExpr = "slice_expr"
 const NodeTypeUnaryExpr = "unary_expr"
+const NodeTypeSliceType = "slice_type"
 const NodeTypeArrayType = "array_type"
 const NodeTypeChanType = "chan_type"
 const NodeTypeFuncType = "func_type"
@@ -4227,17 +4228,110 @@ func (n *UnaryExprNode) Dump(hook func(Node, map[string]string) string) map[stri
 	return ret
 }
 
-func NewArrayTypeNode(filePath string, fileContent []rune, len_ Node, elt Node, start, end Position) Node {
+func NewSliceTypeNode(filePath string, fileContent []rune, type_ Node, start, end Position) Node {
+	if type_ == nil {
+		type_ = DummyNode
+	}
+	_1 := &SliceTypeNode{
+		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeSliceType, start, end),
+		type_:    type_,
+	}
+	creationHook(_1)
+	return _1
+}
+
+type SliceTypeNode struct {
+	*BaseNode
+	type_ Node
+}
+
+func (n *SliceTypeNode) Type() Node {
+	return n.type_
+}
+
+func (n *SliceTypeNode) SetType(v Node) {
+	n.type_ = v
+}
+
+func (n *SliceTypeNode) BuildLink() {
+	if !n.Type().IsDummy() {
+		type_ := n.Type()
+		type_.BuildLink()
+		type_.SetParent(n)
+		type_.SetSelfField("type_")
+		type_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*SliceTypeNode).SetType(n)
+		})
+	}
+}
+
+func (n *SliceTypeNode) Fields() []string {
+	return []string{
+		"type_",
+	}
+}
+
+func (n *SliceTypeNode) Child(field string) Node {
+	if field == "" {
+		return nil
+	}
+	if field == "type_" {
+		return n.Type()
+	}
+	return nil
+}
+
+func (n *SliceTypeNode) SetChild(nodes []Node) {
+	if len(nodes) != 1 {
+		return
+	}
+	n.SetType(nodes[0])
+}
+
+func (n *SliceTypeNode) Fork() Node {
+	_ret := &SliceTypeNode{
+		BaseNode: n.BaseNode.fork(),
+		type_:    n.type_.Fork(),
+	}
+	_ret.type_.SetParent(_ret)
+	return _ret
+}
+
+func (n *SliceTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exit bool), afterChildren func(node Node) (exit bool)) (exit bool) {
+	vc, e := beforeChildren(n)
+	if e {
+		return true
+	}
+	if !vc {
+		return false
+	}
+	if n.type_.Visit(beforeChildren, afterChildren) {
+		return true
+	}
+	if afterChildren(n) {
+		return true
+	}
+	return false
+}
+
+func (n *SliceTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
+	ret := make(map[string]string)
+	ret["kind"] = "\"slice_type\""
+	ret["type"] = DumpNode(n.Type(), hook)
+	return ret
+}
+
+func NewArrayTypeNode(filePath string, fileContent []rune, len_ Node, type_ Node, start, end Position) Node {
 	if len_ == nil {
 		len_ = DummyNode
 	}
-	if elt == nil {
-		elt = DummyNode
+	if type_ == nil {
+		type_ = DummyNode
 	}
 	_1 := &ArrayTypeNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeArrayType, start, end),
 		len_:     len_,
-		elt:      elt,
+		type_:    type_,
 	}
 	creationHook(_1)
 	return _1
@@ -4245,8 +4339,8 @@ func NewArrayTypeNode(filePath string, fileContent []rune, len_ Node, elt Node, 
 
 type ArrayTypeNode struct {
 	*BaseNode
-	len_ Node
-	elt  Node
+	len_  Node
+	type_ Node
 }
 
 func (n *ArrayTypeNode) Len() Node {
@@ -4257,12 +4351,12 @@ func (n *ArrayTypeNode) SetLen(v Node) {
 	n.len_ = v
 }
 
-func (n *ArrayTypeNode) Elt() Node {
-	return n.elt
+func (n *ArrayTypeNode) Type() Node {
+	return n.type_
 }
 
-func (n *ArrayTypeNode) SetElt(v Node) {
-	n.elt = v
+func (n *ArrayTypeNode) SetType(v Node) {
+	n.type_ = v
 }
 
 func (n *ArrayTypeNode) BuildLink() {
@@ -4275,13 +4369,13 @@ func (n *ArrayTypeNode) BuildLink() {
 			n.Parent().(*ArrayTypeNode).SetLen(n)
 		})
 	}
-	if !n.Elt().IsDummy() {
-		elt := n.Elt()
-		elt.BuildLink()
-		elt.SetParent(n)
-		elt.SetSelfField("elt")
-		elt.SetReplaceSelf(func(n Node) {
-			n.Parent().(*ArrayTypeNode).SetElt(n)
+	if !n.Type().IsDummy() {
+		type_ := n.Type()
+		type_.BuildLink()
+		type_.SetParent(n)
+		type_.SetSelfField("type_")
+		type_.SetReplaceSelf(func(n Node) {
+			n.Parent().(*ArrayTypeNode).SetType(n)
 		})
 	}
 }
@@ -4289,7 +4383,7 @@ func (n *ArrayTypeNode) BuildLink() {
 func (n *ArrayTypeNode) Fields() []string {
 	return []string{
 		"len_",
-		"elt",
+		"type_",
 	}
 }
 
@@ -4300,8 +4394,8 @@ func (n *ArrayTypeNode) Child(field string) Node {
 	if field == "len_" {
 		return n.Len()
 	}
-	if field == "elt" {
-		return n.Elt()
+	if field == "type_" {
+		return n.Type()
 	}
 	return nil
 }
@@ -4311,17 +4405,17 @@ func (n *ArrayTypeNode) SetChild(nodes []Node) {
 		return
 	}
 	n.SetLen(nodes[0])
-	n.SetElt(nodes[1])
+	n.SetType(nodes[1])
 }
 
 func (n *ArrayTypeNode) Fork() Node {
 	_ret := &ArrayTypeNode{
 		BaseNode: n.BaseNode.fork(),
 		len_:     n.len_.Fork(),
-		elt:      n.elt.Fork(),
+		type_:    n.type_.Fork(),
 	}
 	_ret.len_.SetParent(_ret)
-	_ret.elt.SetParent(_ret)
+	_ret.type_.SetParent(_ret)
 	return _ret
 }
 
@@ -4336,7 +4430,7 @@ func (n *ArrayTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exi
 	if n.len_.Visit(beforeChildren, afterChildren) {
 		return true
 	}
-	if n.elt.Visit(beforeChildren, afterChildren) {
+	if n.type_.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -4349,7 +4443,7 @@ func (n *ArrayTypeNode) Dump(hook func(Node, map[string]string) string) map[stri
 	ret := make(map[string]string)
 	ret["kind"] = "\"array_type\""
 	ret["len"] = DumpNode(n.Len(), hook)
-	ret["elt"] = DumpNode(n.Elt(), hook)
+	ret["type"] = DumpNode(n.Type(), hook)
 	return ret
 }
 
@@ -4479,17 +4573,17 @@ func (n *ChanTypeNode) Dump(hook func(Node, map[string]string) string) map[strin
 	return ret
 }
 
-func NewFuncTypeNode(filePath string, fileContent []rune, params Node, results Node, start, end Position) Node {
-	if params == nil {
-		params = DummyNode
+func NewFuncTypeNode(filePath string, fileContent []rune, parameters Node, results Node, start, end Position) Node {
+	if parameters == nil {
+		parameters = DummyNode
 	}
 	if results == nil {
 		results = DummyNode
 	}
 	_1 := &FuncTypeNode{
-		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeFuncType, start, end),
-		params:   params,
-		results:  results,
+		BaseNode:   NewBaseNode(filePath, fileContent, NodeTypeFuncType, start, end),
+		parameters: parameters,
+		results:    results,
 	}
 	creationHook(_1)
 	return _1
@@ -4497,16 +4591,16 @@ func NewFuncTypeNode(filePath string, fileContent []rune, params Node, results N
 
 type FuncTypeNode struct {
 	*BaseNode
-	params  Node
-	results Node
+	parameters Node
+	results    Node
 }
 
-func (n *FuncTypeNode) Params() Node {
-	return n.params
+func (n *FuncTypeNode) Parameters() Node {
+	return n.parameters
 }
 
-func (n *FuncTypeNode) SetParams(v Node) {
-	n.params = v
+func (n *FuncTypeNode) SetParameters(v Node) {
+	n.parameters = v
 }
 
 func (n *FuncTypeNode) Results() Node {
@@ -4518,13 +4612,13 @@ func (n *FuncTypeNode) SetResults(v Node) {
 }
 
 func (n *FuncTypeNode) BuildLink() {
-	if !n.Params().IsDummy() {
-		params := n.Params()
-		params.BuildLink()
-		params.SetParent(n)
-		params.SetSelfField("params")
-		params.SetReplaceSelf(func(n Node) {
-			n.Parent().(*FuncTypeNode).SetParams(n)
+	if !n.Parameters().IsDummy() {
+		parameters := n.Parameters()
+		parameters.BuildLink()
+		parameters.SetParent(n)
+		parameters.SetSelfField("parameters")
+		parameters.SetReplaceSelf(func(n Node) {
+			n.Parent().(*FuncTypeNode).SetParameters(n)
 		})
 	}
 	if !n.Results().IsDummy() {
@@ -4540,7 +4634,7 @@ func (n *FuncTypeNode) BuildLink() {
 
 func (n *FuncTypeNode) Fields() []string {
 	return []string{
-		"params",
+		"parameters",
 		"results",
 	}
 }
@@ -4549,8 +4643,8 @@ func (n *FuncTypeNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "params" {
-		return n.Params()
+	if field == "parameters" {
+		return n.Parameters()
 	}
 	if field == "results" {
 		return n.Results()
@@ -4562,17 +4656,17 @@ func (n *FuncTypeNode) SetChild(nodes []Node) {
 	if len(nodes) != 2 {
 		return
 	}
-	n.SetParams(nodes[0])
+	n.SetParameters(nodes[0])
 	n.SetResults(nodes[1])
 }
 
 func (n *FuncTypeNode) Fork() Node {
 	_ret := &FuncTypeNode{
-		BaseNode: n.BaseNode.fork(),
-		params:   n.params.Fork(),
-		results:  n.results.Fork(),
+		BaseNode:   n.BaseNode.fork(),
+		parameters: n.parameters.Fork(),
+		results:    n.results.Fork(),
 	}
-	_ret.params.SetParent(_ret)
+	_ret.parameters.SetParent(_ret)
 	_ret.results.SetParent(_ret)
 	return _ret
 }
@@ -4585,7 +4679,7 @@ func (n *FuncTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exit
 	if !vc {
 		return false
 	}
-	if n.params.Visit(beforeChildren, afterChildren) {
+	if n.parameters.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if n.results.Visit(beforeChildren, afterChildren) {
@@ -4600,7 +4694,7 @@ func (n *FuncTypeNode) Visit(beforeChildren func(node Node) (visitChildren, exit
 func (n *FuncTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"func_type\""
-	ret["params"] = DumpNode(n.Params(), hook)
+	ret["parameters"] = DumpNode(n.Parameters(), hook)
 	ret["results"] = DumpNode(n.Results(), hook)
 	return ret
 }
@@ -4824,13 +4918,13 @@ func (n *MapTypeNode) Dump(hook func(Node, map[string]string) string) map[string
 	return ret
 }
 
-func NewStructTypeNode(filePath string, fileContent []rune, x Node, start, end Position) Node {
-	if x == nil {
-		x = DummyNode
+func NewStructTypeNode(filePath string, fileContent []rune, fields Node, start, end Position) Node {
+	if fields == nil {
+		fields = DummyNode
 	}
 	_1 := &StructTypeNode{
 		BaseNode: NewBaseNode(filePath, fileContent, NodeTypeStructType, start, end),
-		x:        x,
+		fields:   fields,
 	}
 	creationHook(_1)
 	return _1
@@ -4838,32 +4932,32 @@ func NewStructTypeNode(filePath string, fileContent []rune, x Node, start, end P
 
 type StructTypeNode struct {
 	*BaseNode
-	x Node
+	fields Node
 }
 
-func (n *StructTypeNode) X() Node {
-	return n.x
+func (n *StructTypeNode) Fields() Node {
+	return n.fields
 }
 
-func (n *StructTypeNode) SetX(v Node) {
-	n.x = v
+func (n *StructTypeNode) SetFields(v Node) {
+	n.fields = v
 }
 
 func (n *StructTypeNode) BuildLink() {
-	if !n.X().IsDummy() {
-		x := n.X()
-		x.BuildLink()
-		x.SetParent(n)
-		x.SetSelfField("x")
-		x.SetReplaceSelf(func(n Node) {
-			n.Parent().(*StructTypeNode).SetX(n)
+	if !n.Fields().IsDummy() {
+		fields := n.Fields()
+		fields.BuildLink()
+		fields.SetParent(n)
+		fields.SetSelfField("fields")
+		fields.SetReplaceSelf(func(n Node) {
+			n.Parent().(*StructTypeNode).SetFields(n)
 		})
 	}
 }
 
 func (n *StructTypeNode) Fields() []string {
 	return []string{
-		"x",
+		"fields",
 	}
 }
 
@@ -4871,8 +4965,8 @@ func (n *StructTypeNode) Child(field string) Node {
 	if field == "" {
 		return nil
 	}
-	if field == "x" {
-		return n.X()
+	if field == "fields" {
+		return n.Fields()
 	}
 	return nil
 }
@@ -4881,15 +4975,15 @@ func (n *StructTypeNode) SetChild(nodes []Node) {
 	if len(nodes) != 1 {
 		return
 	}
-	n.SetX(nodes[0])
+	n.SetFields(nodes[0])
 }
 
 func (n *StructTypeNode) Fork() Node {
 	_ret := &StructTypeNode{
 		BaseNode: n.BaseNode.fork(),
-		x:        n.x.Fork(),
+		fields:   n.fields.Fork(),
 	}
-	_ret.x.SetParent(_ret)
+	_ret.fields.SetParent(_ret)
 	return _ret
 }
 
@@ -4901,7 +4995,7 @@ func (n *StructTypeNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 	if !vc {
 		return false
 	}
-	if n.x.Visit(beforeChildren, afterChildren) {
+	if n.fields.Visit(beforeChildren, afterChildren) {
 		return true
 	}
 	if afterChildren(n) {
@@ -4913,7 +5007,7 @@ func (n *StructTypeNode) Visit(beforeChildren func(node Node) (visitChildren, ex
 func (n *StructTypeNode) Dump(hook func(Node, map[string]string) string) map[string]string {
 	ret := make(map[string]string)
 	ret["kind"] = "\"struct_type\""
-	ret["x"] = DumpNode(n.X(), hook)
+	ret["fields"] = DumpNode(n.Fields(), hook)
 	return ret
 }
 
@@ -13046,6 +13140,657 @@ func (ps *Parser) typeConstraint() Node {
 }
 
 /*
+type:
+| '(' x=type ')' {paren_type(x)}
+| '*' x=type {star_expr(x)}
+| '[' ']' x=type {slice_type(x)}
+| '[' x=expression ']' y=type {array_type(x, y)}
+| 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
+| 'func' x=signature {x}
+| 'interface' b=interface_body {interface_type(b)}
+| map_type
+| channel_type
+| x=(qualified_type_ident | type_ident) '[' s=','.type+ ','? ']' {generic_type_instantiation(x, s)}
+| qualified_type_ident
+| type_ident
+_group_3 <-- (qualified_type_ident | type_ident)
+*/
+func (ps *Parser) type_() Node {
+	/* '(' x=type ')' {paren_type(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftParen)
+		if _1 == nil {
+			break
+		}
+		x = ps.type_()
+		if x == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpRightParen)
+		if _2 == nil {
+			break
+		}
+		return NewParenTypeNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* '*' x=type {star_expr(x)}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpStar)
+		if _1 == nil {
+			break
+		}
+		x = ps.type_()
+		if x == nil {
+			break
+		}
+		return NewStarExprNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* '[' ']' x=type {slice_type(x)}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftBracket)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpRightBracket)
+		if _2 == nil {
+			break
+		}
+		x = ps.type_()
+		if x == nil {
+			break
+		}
+		return NewSliceTypeNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* '[' x=expression ']' y=type {array_type(x, y)}
+	 */
+	for {
+		var x Node
+		var y Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftBracket)
+		if _1 == nil {
+			break
+		}
+		x = ps.expression()
+		if x == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpRightBracket)
+		if _2 == nil {
+			break
+		}
+		y = ps.type_()
+		if y == nil {
+			break
+		}
+		return NewArrayTypeNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* 'struct' '{' x=struct_field_semi* '}' {struct_type(s)}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwStruct)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftBrace)
+		if _2 == nil {
+			break
+		}
+		_3 := make([]Node, 0)
+		var _4 Node
+		for {
+			_4 = ps.structFieldSemi()
+			if _4 == nil {
+				break
+			}
+			_3 = append(_3, _4)
+		}
+		x = NewNodesNode(_3)
+		_ = x
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpRightBrace)
+		if _5 == nil {
+			break
+		}
+		return NewStructTypeNode(ps._filePath, ps._fileContent, s, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* 'func' x=signature {x}
+	 */
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwFunc)
+		if _1 == nil {
+			break
+		}
+		x = ps.signature()
+		if x == nil {
+			break
+		}
+		return x
+	}
+	ps._reset(pos)
+	/* 'interface' b=interface_body {interface_type(b)}
+	 */
+	for {
+		var b Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwInterface)
+		if _1 == nil {
+			break
+		}
+		b = ps.interfaceBody()
+		if b == nil {
+			break
+		}
+		return NewInterfaceTypeNode(ps._filePath, ps._fileContent, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* map_type
+	 */
+	for {
+		var _1 Node
+		_1 = ps.mapType()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* channel_type
+	 */
+	for {
+		var _1 Node
+		_1 = ps.channelType()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* x=(qualified_type_ident | type_ident) '[' s=','.type+ ','? ']' {generic_type_instantiation(x, s)}
+	 */
+	for {
+		var s Node
+		var x Node
+		x = ps._group3()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftBracket)
+		if _1 == nil {
+			break
+		}
+		_2 := make([]Node, 0)
+		var _3, _4 Node
+		_3 = ps.type_()
+		if _3 == nil {
+			break
+		}
+		_2 = append(_2, _3)
+		for {
+			_p := ps._mark()
+			_4 = ps._expectK(TokenTypeOpComma)
+			if _4 == nil {
+				break
+			}
+			_3 = ps.type_()
+			if _3 == nil {
+				ps._reset(_p)
+				break
+			}
+			_2 = append(_2, _3)
+		}
+		s = NewNodesNode(_2)
+		_ = s
+		var _5 Node
+		_5 = ps._expectK(TokenTypeOpComma)
+		_ = _5
+		var _6 Node
+		_6 = ps._expectK(TokenTypeOpRightBracket)
+		if _6 == nil {
+			break
+		}
+		return NewGenericTypeInstantiationNode(ps._filePath, ps._fileContent, x, s, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* qualified_type_ident
+	 */
+	for {
+		var _1 Node
+		_1 = ps.qualifiedTypeIdent()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* type_ident
+	 */
+	for {
+		var _1 Node
+		_1 = ps.typeIdent()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	return nil
+}
+
+/*
+qualified_type_ident:
+| x=IDENT '.' y=IDENT {qualified_type_ident(x, y)}
+*/
+func (ps *Parser) qualifiedTypeIdent() Node {
+	/* x=IDENT '.' y=IDENT {qualified_type_ident(x, y)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var y Node
+		x = ps._expectK(TokenTypeIdent)
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpDot)
+		if _1 == nil {
+			break
+		}
+		y = ps._expectK(TokenTypeIdent)
+		if y == nil {
+			break
+		}
+		return NewQualifiedTypeIdentNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+type_ident:
+| x=IDENT {type_ident(x)}
+*/
+func (ps *Parser) typeIdent() Node {
+	/* x=IDENT {type_ident(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps._expectK(TokenTypeIdent)
+		if x == nil {
+			break
+		}
+		return NewTypeIdentNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+interface_body:
+| '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
+*/
+func (ps *Parser) interfaceBody() Node {
+	/* '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpLeftBrace)
+		if _1 == nil {
+			break
+		}
+		_2 := make([]Node, 0)
+		var _3 Node
+		for {
+			_3 = ps.methodSpecAndInterfaceTypeNameSemi()
+			if _3 == nil {
+				break
+			}
+			_2 = append(_2, _3)
+		}
+		x = NewNodesNode(_2)
+		_ = x
+		var _4 Node
+		_4 = ps._expectK(TokenTypeOpRightBrace)
+		if _4 == nil {
+			break
+		}
+		return NewFieldListNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+struct_field_semi:
+| x=struct_field end_semi {x}
+*/
+func (ps *Parser) structFieldSemi() Node {
+	/* x=struct_field end_semi {x}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps.structField()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return x
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+struct_field:
+| x=struct_field_ident y=type z=tag? {field(x,y,z)}
+| x=embedded_field y=tag? {field(_,x,y)}
+*/
+func (ps *Parser) structField() Node {
+	/* x=struct_field_ident y=type z=tag? {field(x,y,z)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var y Node
+		var z Node
+		x = ps.structFieldIdent()
+		if x == nil {
+			break
+		}
+		y = ps.type_()
+		if y == nil {
+			break
+		}
+		z = ps.tag()
+		_ = z
+		return NewFieldNode(ps._filePath, ps._fileContent, x, y, z, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* x=embedded_field y=tag? {field(_,x,y)}
+	 */
+	for {
+		var x Node
+		var y Node
+		x = ps.embeddedField()
+		if x == nil {
+			break
+		}
+		y = ps.tag()
+		_ = y
+		return NewFieldNode(ps._filePath, ps._fileContent, nil, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+embedded_field:
+| '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
+| t=type_name_or_generic_type_instantiation {t}
+*/
+func (ps *Parser) embeddedField() Node {
+	/* '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpStar)
+		if _1 == nil {
+			break
+		}
+		x = ps.typeNameOrGenericTypeInstantiation()
+		if x == nil {
+			break
+		}
+		return NewStarExprNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	/* t=type_name_or_generic_type_instantiation {t}
+	 */
+	for {
+		var t Node
+		t = ps.typeNameOrGenericTypeInstantiation()
+		if t == nil {
+			break
+		}
+		return t
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+tag:
+| x=STRING {basic_lit(x)}
+*/
+func (ps *Parser) tag() Node {
+	/* x=STRING {basic_lit(x)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps._expectK(TokenTypeString)
+		if x == nil {
+			break
+		}
+		return NewBasicLitNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+method_spec_and_interface_type_name_semi:
+| method_spec_semi
+| interface_type_name_semi
+| '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
+_group_4 <-- ('~'? t=type {t})
+*/
+func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
+	/* method_spec_semi
+	 */
+	for {
+		var _1 Node
+		_1 = ps.methodSpecSemi()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* interface_type_name_semi
+	 */
+	for {
+		var _1 Node
+		_1 = ps.interfaceTypeNameSemi()
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
+	 */
+	pos := ps._mark()
+	for {
+		var _1 Node
+		_2 := make([]Node, 0)
+		var _3, _4 Node
+		_3 = ps._group4()
+		if _3 == nil {
+			break
+		}
+		_2 = append(_2, _3)
+		for {
+			_p := ps._mark()
+			_4 = ps._expectK(TokenTypeOpBar)
+			if _4 == nil {
+				break
+			}
+			_3 = ps._group4()
+			if _3 == nil {
+				ps._reset(_p)
+				break
+			}
+			_2 = append(_2, _3)
+		}
+		_1 = NewNodesNode(_2)
+		_ = _1
+		var _5 Node
+		_5 = ps.endSemi()
+		if _5 == nil {
+			break
+		}
+		return NewFieldNode(ps._filePath, ps._fileContent, nil, nil, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+method_spec_semi:
+| x=method_spec end_semi {x}
+*/
+func (ps *Parser) methodSpecSemi() Node {
+	/* x=method_spec end_semi {x}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps.methodSpec()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return x
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+interface_type_name_semi:
+| x=type_name end_semi {field(_,x,_)}
+*/
+func (ps *Parser) interfaceTypeNameSemi() Node {
+	/* x=type_name end_semi {field(_,x,_)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		x = ps.typeName()
+		if x == nil {
+			break
+		}
+		var _1 Node
+		_1 = ps.endSemi()
+		if _1 == nil {
+			break
+		}
+		return NewFieldNode(ps._filePath, ps._fileContent, nil, x, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+channel_type:
+| t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
+_group_5 <-- (a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan')
+*/
+func (ps *Parser) channelType() Node {
+	/* t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
+	 */
+	pos := ps._mark()
+	for {
+		var t Node
+		var x Node
+		t = ps._group5()
+		if t == nil {
+			break
+		}
+		x = ps.type_()
+		if x == nil {
+			break
+		}
+		return NewChanTypeNode(ps._filePath, ps._fileContent, t, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
+map_type:
+| 'map' '[' x=type ']' y=type {map_type(x,y)}
+*/
+func (ps *Parser) mapType() Node {
+	/* 'map' '[' x=type ']' y=type {map_type(x,y)}
+	 */
+	pos := ps._mark()
+	for {
+		var x Node
+		var y Node
+		var _1 Node
+		_1 = ps._expectK(TokenTypeKwMap)
+		if _1 == nil {
+			break
+		}
+		var _2 Node
+		_2 = ps._expectK(TokenTypeOpLeftBracket)
+		if _2 == nil {
+			break
+		}
+		x = ps.type_()
+		if x == nil {
+			break
+		}
+		var _3 Node
+		_3 = ps._expectK(TokenTypeOpRightBracket)
+		if _3 == nil {
+			break
+		}
+		y = ps.type_()
+		if y == nil {
+			break
+		}
+		return NewMapTypeNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
+	}
+	ps._reset(pos)
+	return nil
+}
+
+/*
 block:
 | '{' x=statement_semi_list? '}' {block_stmt(x)}
 */
@@ -13415,8 +14160,8 @@ for_stmt:
 | 'for' [ 'range' x=expression ] b=block {range_stmt(_,_,x,b,_)}
 | 'for' [ k=expression ',' v=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,v,x,b,tok)}
 | 'for' [ k=expression tok=(':='|'=') 'range' x=expression ] b=block {range_stmt(k,_,x,b,tok)}
-_group_3 <-- (':='|'=')
-_group_3 <-- (':='|'=')
+_group_6 <-- (':='|'=')
+_group_6 <-- (':='|'=')
 */
 func (ps *Parser) forStmt() Node {
 	/* 'for' [ c=expression? ] b=block {for_stmt(_,c,_,b)}
@@ -13559,7 +14304,7 @@ func (ps *Parser) forStmt() Node {
 			if v == nil {
 				break
 			}
-			tok = ps._group3()
+			tok = ps._group6()
 			if tok == nil {
 				break
 			}
@@ -13605,7 +14350,7 @@ func (ps *Parser) forStmt() Node {
 			if k == nil {
 				break
 			}
-			tok = ps._group3()
+			tok = ps._group6()
 			if tok == nil {
 				break
 			}
@@ -14512,7 +15257,7 @@ func (ps *Parser) sendStmt() Node {
 /*
 inc_dec_stmt:
 | x=expression y=('++'|'--') {inc_dec_stmt(x,y)}
-_group_4 <-- ('++'|'--')
+_group_7 <-- ('++'|'--')
 */
 func (ps *Parser) incDecStmt() Node {
 	/* x=expression y=('++'|'--') {inc_dec_stmt(x,y)}
@@ -14525,7 +15270,7 @@ func (ps *Parser) incDecStmt() Node {
 		if x == nil {
 			break
 		}
-		y = ps._group4()
+		y = ps._group7()
 		if y == nil {
 			break
 		}
@@ -14825,541 +15570,6 @@ func (ps *Parser) labeledStmt() Node {
 		return NewLabeledStmtNode(ps._filePath, ps._fileContent, x, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
-	return nil
-}
-
-/*
-type:
-| type_name_or_generic_type_instantiation
-| type_lit
-| '(' x=type ')' {paren_expr(x)}
-*/
-func (ps *Parser) type_() Node {
-	/* type_name_or_generic_type_instantiation
-	 */
-	for {
-		var _1 Node
-		_1 = ps.typeNameOrGenericTypeInstantiation()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* type_lit
-	 */
-	for {
-		var _1 Node
-		_1 = ps.typeLit()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* '(' x=type ')' {paren_expr(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftParen)
-		if _1 == nil {
-			break
-		}
-		x = ps.type_()
-		if x == nil {
-			break
-		}
-		var _2 Node
-		_2 = ps._expectK(TokenTypeOpRightParen)
-		if _2 == nil {
-			break
-		}
-		return NewParenExprNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-type_name_or_generic_type_instantiation:
-| x=type_name y=generic_args {generic_type_instantiation(x, y)}
-| type_name
-*/
-func (ps *Parser) typeNameOrGenericTypeInstantiation() Node {
-	/* x=type_name y=generic_args {generic_type_instantiation(x, y)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var y Node
-		x = ps.typeName()
-		if x == nil {
-			break
-		}
-		y = ps.genericArgs()
-		if y == nil {
-			break
-		}
-		return NewGenericTypeInstantiationNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* type_name
-	 */
-	for {
-		var _1 Node
-		_1 = ps.typeName()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
-type_name:
-| qualified_ident
-| IDENT
-*/
-func (ps *Parser) typeName() Node {
-	/* qualified_ident
-	 */
-	for {
-		var _1 Node
-		_1 = ps.qualifiedIdent()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* IDENT
-	 */
-	for {
-		var _1 Node
-		_1 = ps._expectK(TokenTypeIdent)
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
-generic_args:
-| '[' s=','.type+ ']' {s}
-*/
-func (ps *Parser) genericArgs() Node {
-	/* '[' s=','.type+ ']' {s}
-	 */
-	pos := ps._mark()
-	for {
-		var s Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftBracket)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3, _4 Node
-		_3 = ps.type_()
-		if _3 == nil {
-			break
-		}
-		_2 = append(_2, _3)
-		for {
-			_p := ps._mark()
-			_4 = ps._expectK(TokenTypeOpComma)
-			if _4 == nil {
-				break
-			}
-			_3 = ps.type_()
-			if _3 == nil {
-				ps._reset(_p)
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		s = NewNodesNode(_2)
-		_ = s
-		var _5 Node
-		_5 = ps._expectK(TokenTypeOpRightBracket)
-		if _5 == nil {
-			break
-		}
-		return s
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-type_lit:
-| '*' x=type {star_expr(x)}
-| array_type
-| struct_type
-| 'func' x=signature {x}
-| 'interface' b=interface_body {interface_type(b)}
-| map_type
-| channel_type
-*/
-func (ps *Parser) typeLit() Node {
-	/* '*' x=type {star_expr(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpStar)
-		if _1 == nil {
-			break
-		}
-		x = ps.type_()
-		if x == nil {
-			break
-		}
-		return NewStarExprNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* array_type
-	 */
-	for {
-		var _1 Node
-		_1 = ps.arrayType()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* struct_type
-	 */
-	for {
-		var _1 Node
-		_1 = ps.structType()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* 'func' x=signature {x}
-	 */
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwFunc)
-		if _1 == nil {
-			break
-		}
-		x = ps.signature()
-		if x == nil {
-			break
-		}
-		return x
-	}
-	ps._reset(pos)
-	/* 'interface' b=interface_body {interface_type(b)}
-	 */
-	for {
-		var b Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwInterface)
-		if _1 == nil {
-			break
-		}
-		b = ps.interfaceBody()
-		if b == nil {
-			break
-		}
-		return NewInterfaceTypeNode(ps._filePath, ps._fileContent, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* map_type
-	 */
-	for {
-		var _1 Node
-		_1 = ps.mapType()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* channel_type
-	 */
-	for {
-		var _1 Node
-		_1 = ps.channelType()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
-interface_body:
-| '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
-*/
-func (ps *Parser) interfaceBody() Node {
-	/* '{' x=method_spec_and_interface_type_name_semi* '}' {field_list(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftBrace)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3 Node
-		for {
-			_3 = ps.methodSpecAndInterfaceTypeNameSemi()
-			if _3 == nil {
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		x = NewNodesNode(_2)
-		_ = x
-		var _4 Node
-		_4 = ps._expectK(TokenTypeOpRightBrace)
-		if _4 == nil {
-			break
-		}
-		return NewFieldListNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-method_spec_and_interface_type_name_semi:
-| method_spec_semi
-| interface_type_name_semi
-| '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
-_group_5 <-- ('~'? t=type {t})
-*/
-func (ps *Parser) methodSpecAndInterfaceTypeNameSemi() Node {
-	/* method_spec_semi
-	 */
-	for {
-		var _1 Node
-		_1 = ps.methodSpecSemi()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* interface_type_name_semi
-	 */
-	for {
-		var _1 Node
-		_1 = ps.interfaceTypeNameSemi()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* '|'.('~'? t=type {t})+ end_semi {field(_,_,_)}
-	 */
-	pos := ps._mark()
-	for {
-		var _1 Node
-		_2 := make([]Node, 0)
-		var _3, _4 Node
-		_3 = ps._group5()
-		if _3 == nil {
-			break
-		}
-		_2 = append(_2, _3)
-		for {
-			_p := ps._mark()
-			_4 = ps._expectK(TokenTypeOpBar)
-			if _4 == nil {
-				break
-			}
-			_3 = ps._group5()
-			if _3 == nil {
-				ps._reset(_p)
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		_1 = NewNodesNode(_2)
-		_ = _1
-		var _5 Node
-		_5 = ps.endSemi()
-		if _5 == nil {
-			break
-		}
-		return NewFieldNode(ps._filePath, ps._fileContent, nil, nil, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-method_spec_semi:
-| x=method_spec end_semi {x}
-*/
-func (ps *Parser) methodSpecSemi() Node {
-	/* x=method_spec end_semi {x}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps.methodSpec()
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return x
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-interface_type_name_semi:
-| x=type_name end_semi {field(_,x,_)}
-*/
-func (ps *Parser) interfaceTypeNameSemi() Node {
-	/* x=type_name end_semi {field(_,x,_)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps.typeName()
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return NewFieldNode(ps._filePath, ps._fileContent, nil, x, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-channel_type:
-| t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
-_group_6 <-- (a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan')
-*/
-func (ps *Parser) channelType() Node {
-	/* t=(a='chan' b='<-' {_pseudo_token(a, b)} | a='<-' b='chan' {_pseudo_token(a, b)} | 'chan') x=type {chan_type(t, x)}
-	 */
-	pos := ps._mark()
-	for {
-		var t Node
-		var x Node
-		t = ps._group6()
-		if t == nil {
-			break
-		}
-		x = ps.type_()
-		if x == nil {
-			break
-		}
-		return NewChanTypeNode(ps._filePath, ps._fileContent, t, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-map_type:
-| 'map' '[' x=type ']' y=type {map_type(x,y)}
-*/
-func (ps *Parser) mapType() Node {
-	/* 'map' '[' x=type ']' y=type {map_type(x,y)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var y Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwMap)
-		if _1 == nil {
-			break
-		}
-		var _2 Node
-		_2 = ps._expectK(TokenTypeOpLeftBracket)
-		if _2 == nil {
-			break
-		}
-		x = ps.type_()
-		if x == nil {
-			break
-		}
-		var _3 Node
-		_3 = ps._expectK(TokenTypeOpRightBracket)
-		if _3 == nil {
-			break
-		}
-		y = ps.type_()
-		if y == nil {
-			break
-		}
-		return NewMapTypeNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-qualified_ident:
-| x=IDENT '.' y=IDENT { selector_expr(x, y) }
-*/
-func (ps *Parser) qualifiedIdent() Node {
-	/* x=IDENT '.' y=IDENT { selector_expr(x, y) }
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var y Node
-		x = ps._expectK(TokenTypeIdent)
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpDot)
-		if _1 == nil {
-			break
-		}
-		y = ps._expectK(TokenTypeIdent)
-		if y == nil {
-			break
-		}
-		return NewSelectorExprNode(ps._filePath, ps._fileContent, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-receiver:
-| parameters
-*/
-func (ps *Parser) receiver() Node {
-	/* parameters
-	 */
-	for {
-		var _1 Node
-		_1 = ps.parameters()
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
 	return nil
 }
 
@@ -16822,7 +17032,6 @@ func (ps *Parser) keyedElement() Node {
 /*
 array_type:
 | '[' ']' x=type {array_type(_,x)}
-| '[' e=ellipsis ']' x=type {array_type(e,x)}
 | '[' x=expression ']' y=type {array_type(x,y)}
 */
 func (ps *Parser) arrayType() Node {
@@ -16846,32 +17055,6 @@ func (ps *Parser) arrayType() Node {
 			break
 		}
 		return NewArrayTypeNode(ps._filePath, ps._fileContent, nil, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* '[' e=ellipsis ']' x=type {array_type(e,x)}
-	 */
-	for {
-		var e Node
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftBracket)
-		if _1 == nil {
-			break
-		}
-		e = ps.ellipsis()
-		if e == nil {
-			break
-		}
-		var _2 Node
-		_2 = ps._expectK(TokenTypeOpRightBracket)
-		if _2 == nil {
-			break
-		}
-		x = ps.type_()
-		if x == nil {
-			break
-		}
-		return NewArrayTypeNode(ps._filePath, ps._fileContent, e, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	/* '[' x=expression ']' y=type {array_type(x,y)}
@@ -16923,193 +17106,6 @@ func (ps *Parser) methodSpec() Node {
 			break
 		}
 		return NewFieldNode(ps._filePath, ps._fileContent, NewNodesNode([]Node{x}), y, nil, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-struct_body:
-| '{' x=field_decl_semi* '}' {field_list(x)}
-*/
-func (ps *Parser) structBody() Node {
-	/* '{' x=field_decl_semi* '}' {field_list(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpLeftBrace)
-		if _1 == nil {
-			break
-		}
-		_2 := make([]Node, 0)
-		var _3 Node
-		for {
-			_3 = ps.fieldDeclSemi()
-			if _3 == nil {
-				break
-			}
-			_2 = append(_2, _3)
-		}
-		x = NewNodesNode(_2)
-		_ = x
-		var _4 Node
-		_4 = ps._expectK(TokenTypeOpRightBrace)
-		if _4 == nil {
-			break
-		}
-		return NewFieldListNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-struct_type:
-| 'struct' b=struct_body {struct_type(b)}
-*/
-func (ps *Parser) structType() Node {
-	/* 'struct' b=struct_body {struct_type(b)}
-	 */
-	pos := ps._mark()
-	for {
-		var b Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeKwStruct)
-		if _1 == nil {
-			break
-		}
-		b = ps.structBody()
-		if b == nil {
-			break
-		}
-		return NewStructTypeNode(ps._filePath, ps._fileContent, b, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-field_decl_semi:
-| x=field_decl end_semi {x}
-*/
-func (ps *Parser) fieldDeclSemi() Node {
-	/* x=field_decl end_semi {x}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps.fieldDecl()
-		if x == nil {
-			break
-		}
-		var _1 Node
-		_1 = ps.endSemi()
-		if _1 == nil {
-			break
-		}
-		return x
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-field_decl:
-| x=identifier_list y=type z=tag? {field(x,y,z)}
-| x=embedded_field y=tag? {field(_,x,y)}
-*/
-func (ps *Parser) fieldDecl() Node {
-	/* x=identifier_list y=type z=tag? {field(x,y,z)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var y Node
-		var z Node
-		x = ps.identifierList()
-		if x == nil {
-			break
-		}
-		y = ps.type_()
-		if y == nil {
-			break
-		}
-		z = ps.tag()
-		_ = z
-		return NewFieldNode(ps._filePath, ps._fileContent, x, y, z, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* x=embedded_field y=tag? {field(_,x,y)}
-	 */
-	for {
-		var x Node
-		var y Node
-		x = ps.embeddedField()
-		if x == nil {
-			break
-		}
-		y = ps.tag()
-		_ = y
-		return NewFieldNode(ps._filePath, ps._fileContent, nil, x, y, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-embedded_field:
-| '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
-| t=type_name_or_generic_type_instantiation {t}
-*/
-func (ps *Parser) embeddedField() Node {
-	/* '*' x=type_name_or_generic_type_instantiation {star_expr(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpStar)
-		if _1 == nil {
-			break
-		}
-		x = ps.typeNameOrGenericTypeInstantiation()
-		if x == nil {
-			break
-		}
-		return NewStarExprNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
-	}
-	ps._reset(pos)
-	/* t=type_name_or_generic_type_instantiation {t}
-	 */
-	for {
-		var t Node
-		t = ps.typeNameOrGenericTypeInstantiation()
-		if t == nil {
-			break
-		}
-		return t
-	}
-	ps._reset(pos)
-	return nil
-}
-
-/*
-tag:
-| x=STRING {basic_lit(x)}
-*/
-func (ps *Parser) tag() Node {
-	/* x=STRING {basic_lit(x)}
-	 */
-	pos := ps._mark()
-	for {
-		var x Node
-		x = ps._expectK(TokenTypeString)
-		if x == nil {
-			break
-		}
-		return NewBasicLitNode(ps._filePath, ps._fileContent, x, ps._tokens[pos].Start, ps._visibleTokenBefore(ps._mark()).End)
 	}
 	ps._reset(pos)
 	return nil
@@ -17219,25 +17215,25 @@ func (ps *Parser) _group2() Node {
 
 /*
 _group_3:
-| ':='
-| '='
+| qualified_type_ident
+| type_ident
 */
 func (ps *Parser) _group3() Node {
-	/* ':='
+	/* qualified_type_ident
 	 */
 	for {
 		var _1 Node
-		_1 = ps._expectK(TokenTypeOpColonEqual)
+		_1 = ps.qualifiedTypeIdent()
 		if _1 == nil {
 			break
 		}
 		return _1
 	}
-	/* '='
+	/* type_ident
 	 */
 	for {
 		var _1 Node
-		_1 = ps._expectK(TokenTypeOpEqual)
+		_1 = ps.typeIdent()
 		if _1 == nil {
 			break
 		}
@@ -17248,38 +17244,9 @@ func (ps *Parser) _group3() Node {
 
 /*
 _group_4:
-| '++'
-| '--'
-*/
-func (ps *Parser) _group4() Node {
-	/* '++'
-	 */
-	for {
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpPlusPlus)
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	/* '--'
-	 */
-	for {
-		var _1 Node
-		_1 = ps._expectK(TokenTypeOpMinusMinus)
-		if _1 == nil {
-			break
-		}
-		return _1
-	}
-	return nil
-}
-
-/*
-_group_5:
 | '~'? t=type {t}
 */
-func (ps *Parser) _group5() Node {
+func (ps *Parser) _group4() Node {
 	/* '~'? t=type {t}
 	 */
 	pos := ps._mark()
@@ -17299,12 +17266,12 @@ func (ps *Parser) _group5() Node {
 }
 
 /*
-_group_6:
+_group_5:
 | a='chan' b='<-' {_pseudo_token(a, b)}
 | a='<-' b='chan' {_pseudo_token(a, b)}
 | 'chan'
 */
-func (ps *Parser) _group6() Node {
+func (ps *Parser) _group5() Node {
 	/* a='chan' b='<-' {_pseudo_token(a, b)}
 	 */
 	pos := ps._mark()
@@ -17343,6 +17310,64 @@ func (ps *Parser) _group6() Node {
 	for {
 		var _1 Node
 		_1 = ps._expectK(TokenTypeKwChan)
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	return nil
+}
+
+/*
+_group_6:
+| ':='
+| '='
+*/
+func (ps *Parser) _group6() Node {
+	/* ':='
+	 */
+	for {
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpColonEqual)
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* '='
+	 */
+	for {
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpEqual)
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	return nil
+}
+
+/*
+_group_7:
+| '++'
+| '--'
+*/
+func (ps *Parser) _group7() Node {
+	/* '++'
+	 */
+	for {
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpPlusPlus)
+		if _1 == nil {
+			break
+		}
+		return _1
+	}
+	/* '--'
+	 */
+	for {
+		var _1 Node
+		_1 = ps._expectK(TokenTypeOpMinusMinus)
 		if _1 == nil {
 			break
 		}

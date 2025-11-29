@@ -9,12 +9,13 @@ import (
 
 func main() {
 	start := time.Now()
-	b, err := os.ReadFile("go.txt")
+	grammar, err := pgen.PreProcess("grammar/go.txt")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	output, err := pgen.Run(string(b))
+	_ = os.WriteFile("grammar/go.log", []byte(grammar), 0644)
+	output, err := pgen.Run(grammar)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
